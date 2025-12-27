@@ -1,0 +1,21 @@
+---
+variables:
+
+default:
+  artifacts:
+    expire_in:
+      3 day
+
+include:
+  # cf: https://docs.gitlab.com/ee/ci/yaml/includes.html
+  - ".gitlab/ci/workflow.yml"
+  - ".gitlab/ci/stages.yml"
+  - ".gitlab/ci/core.yml"
+  - ".gitlab/ci/pre-commit.yml"
+  - ".gitlab/ci/python.yml"
+
+pre-commit:
+  extends: .pre-commit
+
+pre-commit:autoupdate:
+  extends: .pre-commit:autoupdate

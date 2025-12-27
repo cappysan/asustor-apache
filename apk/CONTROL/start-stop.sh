@@ -1,30 +1,45 @@
 #!/usr/bin/env sh
+# SPDX-License-Identifier: MIT
 #
-as_apk=/usr/local/AppCentral/cappysan-apache
+. /usr/local/AppCentral/cappysan-apache/.env.install
+cd ${APKG_PKG_DIR:-/nonexistent} || exit 1
 
-LD_LIBRARY_PATH="${as_apk}/lib:${LD_LIBRARY_PATH}"
+LD_LIBRARY_PATH="${APKG_PKG_DIR}/lib:${LD_LIBRARY_PATH}"
+mkdir -p  /var/log/apache /var/run/apache
+chmod 750 /var/log/apache /var/run/apache
 
-if test ! -d /var/log/apache; then
-  mkdir /var/log/apache
-fi
-chmod 750 /var/log/apache
+${APKG_PKG_DIR}/bin/install-hooks
 
+function logger() {
+  echo "${@}" >&2
+  syslog --log 0 --level 0 --user SYSTEM --event "${@}"
+}
+
+# cf: apk/bin/install-hooks
+export HOME=/share/Configuration/apache
 case $1 in
   start)
-    ${as_apk}/bin/apache2 -e warn -d "${as_apk}" -f "${as_apk}"/apache.conf -k start
+    touch "${APKG_CFG_DIR}/active"
+    ${APKG_PKG_DIR}/bin/apache2 -e warn -d "${APKG_PKG_DIR}" -f "${APKG_PKG_DIR}"/apache.conf -k start
+    logger "[Apache] Starting daemon..."
     ;;
 
   stop)
-    ${as_apk}/bin/apache2 -e warn -d "${as_apk}" -f "${as_apk}"/apache.conf -k graceful-stop
+    if test -f "${APKG_CFG_DIR}/active"; then
+      rm -f "${APKG_CFG_DIR}/active"
+    fi
+    ${APKG_PKG_DIR}/bin/apache2 -e warn -d "${APKG_PKG_DIR}" -f "${APKG_PKG_DIR}"/apache.conf -k graceful-stop
+    logger "[Apache] Stopping daemon..."
     ;;
 
   reload)
-    ${as_apk}/bin/apache2 -e warn -d "${as_apk}" -f "${as_apk}"/apache.conf -k graceful
+    ${APKG_PKG_DIR}/bin/apache2 -e warn -d "${APKG_PKG_DIR}" -f "${APKG_PKG_DIR}"/apache.conf -k graceful
+    logger "[Apache] Reloading daemon..."
     ;;
 
   restart)
-    $0 stop
-    $0 start
+    ./CONTROL/start-stop.sh stop
+    ./CONTROL/start-stop.sh start
     ;;
 
   *)

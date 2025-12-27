@@ -3,18 +3,25 @@
     "architecture": "x86-64",
     "conflicts": [],
     "depends": [
-      "httpd-2.4.43"
+      "httpd-2.4.43",
+      "jq"
     ],
-    "developer": "Apache Software Foundation",
     "email": "julien@cappysan.dev",
     "firmware": "5.0.0",
     "maintainer": "Cappysan",
-    "name": "Apache2",
+    "name": "Apache",
     "package": "cappysan-apache",
     "version": "2.4.62-r1",
-    "website": "https://gitlab.com/cappysan/asustor/apache2-proxy"
+    "developer": "Apache Software Foundation",
+    "website": "https://gitlab.com/cappysan/asustor/apache"
   },
   "register": {
+    "share-folder": [
+      {
+        "name": "Configuration",
+        "description": "Application configuration"
+      }
+    ],
     "boot-priority": {
       "start-order": 70,
       "stop-order": 30
@@ -22,12 +29,6 @@
     "port": [
       "80",
       "443"
-    ],
-    "share-folder": [
-      {
-        "description": "Shared configuration folder",
-        "name": "Configuration"
-      }
     ]
   }
 }

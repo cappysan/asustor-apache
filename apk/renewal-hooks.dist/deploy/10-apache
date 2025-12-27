@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+WHAT=apache
+
+if test "x${RENEWED_LINEAGE}" == "x"; then
+   RENEWED_LINEAGE=/etc/letsencrypt/live/$(certbot certificates 2>/dev/null | grep "Certificate Name:" | head -1 | cut -d":" -f2 | xargs)
+   echo RENEWED_LINEAGE=$RENEWED_LINEAGE
+fi
+
+. /usr/local/AppCentral/cappysan-apache/.env.install
+
+function logger() {
+  echo "${@}" >&2
+  syslog --log 0 --level 0 --user SYSTEM --event "${@}"
+}
+
+if test -f ${APKG_CFG_DIR}/active; then
+  if test -e /var/run/apache/apache.pid; then
+    logger "[Certbot] Restarting ${WHAT}..."
+    ${APKG_PKG_DIR}/CONTROL/start-stop.sh restart
+  fi
+fi
+exit 0

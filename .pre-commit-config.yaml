@@ -13,7 +13,7 @@ repos:
       - id: check-json
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable
-      - id: check-symlinks
+      - id: check-toml
       - id: check-vcs-permalinks
       - id: check-yaml
         exclude: ".gitlab"
@@ -21,26 +21,30 @@ repos:
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: file-contents-sorter
-        args:
-          - "--unique"
+        args: ["--unique"]
         files: "support/codespell.exclude"
       - id: mixed-line-ending
         name: "fix mixed line ending"
-        args:
-          - "--fix=lf"
+        args: ["--fix=lf"]
       - id: pretty-format-json
-        args: ["--autofix", "--indent", "2"]
+        name: "run json pretty format"
+        args: ["--autofix", "--indent", "2", "--no-sort-keys"]
       - id: requirements-txt-fixer
       - id: trailing-whitespace
         name: "fix trailing whitespace"
-        args:
-         - "--markdown-linebreak-ext=md"
+        args: ["--markdown-linebreak-ext", "md"]
 
   - repo: "https://github.com/codespell-project/codespell"
     rev: v2.4.1
     hooks:
     - id: codespell
       name: "run codespell"
-      exclude: "bin/apkg.py|mime.types"
+      exclude: "bin/apkg.py"
       additional_dependencies:
         - tomli
+
+  - repo: "https://github.com/andreoliwa/nitpick"
+    rev: v0.38.1
+    hooks:
+      - id: nitpick-check
+        name: "run nitpick check"

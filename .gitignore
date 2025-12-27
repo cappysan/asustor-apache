@@ -1,12 +1,12 @@
 ### Project specifics ###
+/*.apk*
 
-/*.apk
-/_build/
-/apk/bin/
-/apk/share/
+### Generic ###
+/.env
+/.cache/
+/public/
 
-### Python ###
 # Virtual env
 /.python-version
 /.tox/
-/.venv/
+/.venv*/

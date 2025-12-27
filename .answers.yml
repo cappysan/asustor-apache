@@ -1,0 +1,52 @@
+---
+# The following file enables recreating a templated output dir by executing:
+#   mk-scaffold clone "https://gitlab.com/cappysan/scaffolds/asustor-template.git" --input-file .answers.yml --output-dir output
+#
+
+answers:
+  # File generated with mk-scaffold:
+  #   cf. nitpick/scaffold-tpl-version-check.toml
+  template_used: "https://gitlab.com/cappysan/scaffolds/asustor-template.git"
+  template_used_version: "1.1.0-r4"
+
+  author: "Julien Lecomte"
+  email: "julien@cappysan.dev"
+  maintainer: "Cappysan"
+  developer: "Apache Software Foundation"
+
+  project_name: "Apache"
+  project_slug: "cappysan-apache"
+  project_url: "https://gitlab.com/cappysan/asustor/apache"
+  project_description: "Asustor Apache application"
+  project_path: "asustor/apache"
+  project_wp_url: "https://asustor.cappysan.dev/apache"
+
+  has_documentation: False
+  documentation_url: "https://example.com"
+  has_documentation_todo: False
+  encryption_key_url: "https://gitlab.com/user.gpg"
+
+  has_pages: False
+  has_pages_on_main: False
+  has_releases: False
+  has_changelog: True
+
+  user_name: "as-www-data"
+  is_pipx: False
+  is_single_app: False
+  download_url: "https://example.com"
+  use_start_stop_daemon: False
+  has_port: True
+  has_adm_desktop: False
+  has_renewal_hook: True
+
+  license: "MIT"
+  version: "2.4.62-r1"
+  version_style: "semver-rev"
+
+  keep_placeholders: False
+  copyright_string: "Cappysan, Julien Lecomte, and contributors"
+
+  # Hidden fields
+  creation_year: "2025"
+  last_update: "2026-01-02 18:02:00"

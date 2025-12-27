@@ -1,18 +1,14 @@
 #!/usr/bin/env sh
+# SPDX-License-Identifier: MIT
 #
-# Ensure permissions limit to root user.
-chown -R 0:0 ${APKG_PKG_DIR}
+# ------------------------------------------------------------------------------
+# Save variables
+APKG_PKG_DIR=/usr/local/AppCentral/${APKG_PKG_NAME}
+APKG_PKG_SHORT_VER="${APKG_PKG_VER%-*}"
+APKG_CFG_DIR=/share/Configuration/apache
+export APKG_CFG_DIR APKG_PKG_VER APKG_PKG_SHORT_VER
+env | grep APKG | grep -v " " | sort > ${APKG_PKG_DIR}/.env.install
 
-mkdir -p /share/Configuration/apache/htdocs/
+${APKG_PKG_DIR}/CONTROL/common.sh
 
-rsync -av --inplace --ignore-existing /usr/local/AppCentral/cappysan-apache/conf.dist/ /share/Configuration/apache/
-
-for as_dir in jellyfin; do
-  mkdir -p /share/Configuration/apache/log/${as_dir}/
-done
-
-# /usr/local/AppCentral/httpd-2.4.43/data/conf/asustor.conf
-# [Web Center]
-# EnableHttp=No
-# EnableHttps=No
 exit 0
