@@ -19,8 +19,9 @@ function logger() {
 export HOME=/share/Configuration/apache
 case $1 in
   start)
+    exit 0
     touch "${APKG_CFG_DIR}/active"
-    ${APKG_PKG_DIR}/bin/apache2 -e warn -d "${APKG_PKG_DIR}" -f "${APKG_PKG_DIR}"/apache.conf -k start
+    ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k start
     logger "[Apache] Starting daemon..."
     ;;
 
@@ -28,13 +29,15 @@ case $1 in
     if test -f "${APKG_CFG_DIR}/active"; then
       rm -f "${APKG_CFG_DIR}/active"
     fi
-    ${APKG_PKG_DIR}/bin/apache2 -e warn -d "${APKG_PKG_DIR}" -f "${APKG_PKG_DIR}"/apache.conf -k graceful-stop
+    ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful-stop
     logger "[Apache] Stopping daemon..."
     ;;
 
   reload)
-    ${APKG_PKG_DIR}/bin/apache2 -e warn -d "${APKG_PKG_DIR}" -f "${APKG_PKG_DIR}"/apache.conf -k graceful
-    logger "[Apache] Reloading daemon..."
+    if test -f "${APKG_CFG_DIR}/active"; then
+      ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful
+      logger "[Apache] Reloading daemon..."
+    fi
     ;;
 
   restart)
