@@ -19,7 +19,6 @@ function logger() {
 export HOME=/share/Configuration/apache
 case $1 in
   start)
-    exit 0
     touch "${APKG_CFG_DIR}/active"
     ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k start
     logger "[Apache] Starting daemon..."

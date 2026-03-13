@@ -4,6 +4,18 @@ Changes relevant to the users of Cappysan's Asustor Apache APK are documented he
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.4.65-r4 - 2026-03-13
+
+### Added
+
+- Added logrotate
+- Auto creation of symlinks for sites-enabled
+
+### Changed
+
+- Move apache folders from root folder to it's own folder
+
+
 ## 2.4.65-r3 - 2026-03-11
 
 ### Changed
