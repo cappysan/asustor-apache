@@ -16,7 +16,7 @@ for as_dir in /usr/local/AppCentral/cappysan-*/sites-available.dist; do
 done
 
 # Enable logrotate
-cp -f ${APKG_PKG_DIR}/logrotate.d/cappysan-apache /etc/logrotate.d/
+cp -f ${APKG_CFG_DIR}/logrotate.d/cappysan-apache /etc/logrotate.d/
 
 # If there's a hosts.d folder, persistence will copy them over to /etc/hosts
 if test -f /root/AppCentral/cappysan-persistence/CONTROL/start-stop.sh; then
