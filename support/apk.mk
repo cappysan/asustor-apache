@@ -3,5 +3,5 @@
 all: apk
 
 apk: ## build the apk package
-	fakeroot bin/apkg.py create apk --destination .
+	fakeroot support/apkg.py create apk --destination .
 	realpath cappysan-*.apk

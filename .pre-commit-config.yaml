@@ -39,7 +39,7 @@ repos:
     hooks:
     - id: codespell
       name: "run codespell"
-      exclude: "bin/apkg.py"
+      exclude: "support/apkg.py"
       additional_dependencies:
         - tomli
 
