@@ -11,7 +11,7 @@
     "maintainer": "Cappysan",
     "name": "Apache",
     "package": "cappysan-apache",
-    "version": "2.4.62-r4",
+    "version": "2.4.62-r5",
     "developer": "Apache Software Foundation",
     "website": "https://gitlab.com/cappysan/asustor/apache"
   },
