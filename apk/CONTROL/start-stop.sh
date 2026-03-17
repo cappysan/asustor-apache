@@ -8,40 +8,43 @@ LD_LIBRARY_PATH="${APKG_PKG_DIR}/lib:${LD_LIBRARY_PATH}"
 mkdir -p  /var/log/apache /var/run/apache
 chmod 750 /var/log/apache /var/run/apache
 
-${APKG_PKG_DIR}/bin/install-hooks
 
 function logger() {
   echo "${@}" >&2
   syslog --log 0 --level 0 --user SYSTEM --event "${@}"
 }
 
-# cf: apk/bin/install-hooks
+# cf: apk/CONTROL/install-hooks
 export HOME=/share/Configuration/apache
 case $1 in
   start)
-    touch "${APKG_CFG_DIR}/active"
-    ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k start
     logger "[Apache] Starting daemon..."
+    touch "${APKG_CFG_DIR}/active"
+    ${APKG_PKG_DIR}/CONTROL/install-hooks
+    ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k start
     ;;
 
   stop)
-    if test -f "${APKG_CFG_DIR}/active"; then
-      rm -f "${APKG_CFG_DIR}/active"
-    fi
-    ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful-stop
     logger "[Apache] Stopping daemon..."
+    rm -f "${APKG_CFG_DIR}/active"
+    ${APKG_PKG_DIR}/CONTROL/uninstall-hooks
+    ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful-stop
     ;;
 
   reload)
+    logger "[Apache] Reloading..."
     if test -f "${APKG_CFG_DIR}/active"; then
+      ${APKG_PKG_DIR}/CONTROL/install-hooks
       ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful
-      logger "[Apache] Reloading daemon..."
     fi
     ;;
 
   restart)
-    ./CONTROL/start-stop.sh stop
-    ./CONTROL/start-stop.sh start
+    logger "[Apache] Restarting daemon..."
+    if test -f "${APKG_CFG_DIR}/active"; then
+      ./CONTROL/start-stop.sh stop
+      ./CONTROL/start-stop.sh start
+    fi
     ;;
 
   *)

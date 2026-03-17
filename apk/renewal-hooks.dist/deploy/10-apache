@@ -9,10 +9,7 @@ function logger() {
   syslog --log 0 --level 0 --user SYSTEM --event "${@}"
 }
 
-if test -f ${APKG_CFG_DIR}/active; then
-  if test -e /var/run/apache/apache.pid; then
-    logger "[Certbot] Restarting ${WHAT}..."
-    ${APKG_PKG_DIR}/CONTROL/start-stop.sh reload
-  fi
+if test -e /var/run/apache/apache.pid; then
+  ${APKG_PKG_DIR}/CONTROL/start-stop.sh reload
 fi
 exit 0

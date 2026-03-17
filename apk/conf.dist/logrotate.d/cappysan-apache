@@ -8,8 +8,6 @@
   create 640 as-www-data root
   sharedscripts
   postrotate
-    if pgrep -f ^/usr/local/AppCentral/cappysan-apache/apache/bin/apache2 > /dev/null; then
-      /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload
-    fi
+    /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload
   endscript
 }
