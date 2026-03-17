@@ -14,27 +14,27 @@ function logger() {
   syslog --log 0 --level 0 --user SYSTEM --event "${@}"
 }
 
-# cf: apk/CONTROL/install-hooks
+# cf: apk/CONTROL/install-hooks.sh
 export HOME=/share/Configuration/apache
 case $1 in
   start)
     logger "[Apache] Starting daemon..."
     touch "${APKG_CFG_DIR}/active"
-    ${APKG_PKG_DIR}/CONTROL/install-hooks
+    ${APKG_PKG_DIR}/CONTROL/install-hooks.sh
     ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k start
     ;;
 
   stop)
     logger "[Apache] Stopping daemon..."
     rm -f "${APKG_CFG_DIR}/active"
-    ${APKG_PKG_DIR}/CONTROL/uninstall-hooks
+    ${APKG_PKG_DIR}/CONTROL/uninstall-hooks.sh
     ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful-stop
     ;;
 
   reload)
     logger "[Apache] Reloading..."
     if test -f "${APKG_CFG_DIR}/active"; then
-      ${APKG_PKG_DIR}/CONTROL/install-hooks
+      ${APKG_PKG_DIR}/CONTROL/install-hooks.sh
       ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful
     fi
     ;;
