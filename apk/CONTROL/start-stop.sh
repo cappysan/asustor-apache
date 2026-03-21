@@ -8,7 +8,6 @@ LD_LIBRARY_PATH="${APKG_PKG_DIR}/lib:${LD_LIBRARY_PATH}"
 mkdir -p  /var/log/apache /var/run/apache
 chmod 750 /var/log/apache /var/run/apache
 
-
 function logger() {
   echo "${@}" >&2
   syslog --log 0 --level 0 --user SYSTEM --event "${@}"

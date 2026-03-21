@@ -19,8 +19,8 @@ done
 cp -f ${APKG_CFG_DIR}/logrotate.d/cappysan-apache /etc/logrotate.d/
 
 # If there's a hosts.d folder, persistence will copy them over to /etc/hosts
-if test -f /root/AppCentral/cappysan-persistence/CONTROL/start-stop.sh; then
-  /root/AppCentral/cappysan-persistence/CONTROL/start-stop.sh reload
+if test -f /usr/local/AppCentral/cappysan-persistence/CONTROL/install-hooks.d/hosts.sh; then
+  /usr/local/AppCentral/cappysan-persistence/CONTROL/install-hooks.d/hosts.sh
 fi
 
 # If two files are the same, then symlink them
