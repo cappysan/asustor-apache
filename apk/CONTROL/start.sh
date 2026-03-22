@@ -8,6 +8,8 @@ mkdir -p ${APKG_CFG_DIR}/sites-available/
 mkdir -p ${APKG_CFG_DIR}/sites-enabled/
 mkdir -p ${APKG_CFG_DIR}/logs/
 
+# Others
+# ======
 for as_dir in /usr/local/AppCentral/cappysan-*/sites-available.dist; do
   if test -d "${as_dir}"; then
     rsync -a --inplace --ignore-existing ${as_dir}/ \
@@ -15,9 +17,12 @@ for as_dir in /usr/local/AppCentral/cappysan-*/sites-available.dist; do
   fi
 done
 
-# Enable logrotate
+# Logrotate
+# =========
 cp -f ${APKG_CFG_DIR}/logrotate.d/cappysan-apache /etc/logrotate.d/
 
+# Symlink
+# =======
 # If two files are the same, then symlink them
 for as_file in ${APKG_CFG_DIR}/sites-enabled/*.conf; do
   if test ! -L ${as_file}; then
@@ -32,7 +37,10 @@ for as_file in ${APKG_CFG_DIR}/sites-enabled/*.conf; do
   fi
 done
 
+# Dependencies
+# ============
 # Reset /etc/hosts
 if test -f /usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh; then
+  export DOCKER_NO_RELOAD=1
   /usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh reload
 fi
