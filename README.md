@@ -4,9 +4,10 @@ The Apache HTTP Server is a free and open-source cross-platform web server.
 
 ## Table of contents
 1. [Installation](#installation)  
-2. [Support & Sponsorship](#support)  
-3. [License](#license)  
-4. [Links](#links)  
+2. [Usage](#usage)  
+3. [Support & Sponsorship](#support)  
+4. [License](#license)  
+5. [Links](#links)  
 
 
 ## Installation <a name="installation"></a>
@@ -16,9 +17,11 @@ The APK application is available as a GitLab release, and on [https://asustor.ca
 The APK application is not available as an Asustor App Central application as Asustor does not accept duplicates, even if they differ.
 
 
-### Usage
+## Usage <a name="usage"></a>
 
-A brief usage guide can be found below. A more complete step-by-step guide is available on [https://blog.cappysan.dev](https://blog.cappysan.dev) in the Asustor section.
+In brief, modify the files in "/share/Configuration/apache" to your liking and restart the service.
+
+More documentation can be found at [https://blog.cappysan.dev/asustor/](https://blog.cappysan.dev/asustor/)
 
 
 ### Installing
@@ -44,7 +47,7 @@ You can help support this project, and all Cappysan projects, through the follow
 
 - 🛠️ Contribute by submitting issues, improving documentation, or creating pull requests to help the project grow.
 
-- ☕ Support financially through [Buy Me a Coffee](https://buymeacoffee.com/cappysan), [Patreon](https://www.patreon.com/c/cappysan), [GitHub](https://github.com/sponsors/cappysan), or [Bitcoin (bc1qaz86l247df34h2q657c6zfs5l33r76s4ewxg4v)](https://addrs.to/pay/BTC/bc1qaz86l247df34h2q657c6zfs5l33r76s4ewxg4v). Your contributions directly sustain ongoing development and maintenance, including server costs.
+- ☕ Support financially through [Buy Me a Coffee](https://buymeacoffee.com/cappysan), [GitHub](https://github.com/sponsors/cappysan), or [Bitcoin (bc1qaz86l247df34h2q657c6zfs5l33r76s4ewxg4v)](https://addrs.to/pay/BTC/bc1qaz86l247df34h2q657c6zfs5l33r76s4ewxg4v). Your contributions directly sustain ongoing development and maintenance, including server costs.
 
 Your support ensures these projects continue to improve, expand, and remain freely available to everyone.
 
@@ -58,8 +61,8 @@ Please refer to the upstream software documentation for details on their respect
 
 ## Links <a name="links"></a>
 
-  * Cappysan's Asustor Tutorials & Procedures: [https://blog.cappysan.dev/asustor/index.html](https://blog.cappysan.dev/asustor/index.html)
-  * Cappysan's Asustor applications website: [https://asustor.cappysan.dev/](https://asustor.cappysan.dev/)
+  * Cappysan's Asustor Home Lab: [https://blog.cappysan.dev/asustor/](https://blog.cappysan.dev/asustor/)
+  * Cappysan's Asustor APKs: [https://asustor.cappysan.dev/](https://asustor.cappysan.dev/)
   * GitLab: [https://gitlab.com/cappysan/asustor/apache](https://gitlab.com/cappysan/asustor/apache)
   * GitHub: [https://github.com/cappysan/asustor-apache](https://github.com/cappysan/asustor-apache)
   * Discord: [https://discord.gg/SsY3CAdp4Q](https://discord.gg/SsY3CAdp4Q)
