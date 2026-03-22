@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-#
+# SPDX-License-Identifier: MIT
 #
 . /usr/local/AppCentral/cappysan-apache/.env.install
 cd ${APKG_PKG_DIR:-/nonexistent} || exit 1
@@ -18,11 +18,6 @@ done
 # Enable logrotate
 cp -f ${APKG_CFG_DIR}/logrotate.d/cappysan-apache /etc/logrotate.d/
 
-# If there's a hosts.d folder, persistence will copy them over to /etc/hosts
-if test -f /usr/local/AppCentral/cappysan-persistence/CONTROL/install-hooks.d/hosts.sh; then
-  /usr/local/AppCentral/cappysan-persistence/CONTROL/install-hooks.d/hosts.sh
-fi
-
 # If two files are the same, then symlink them
 for as_file in ${APKG_CFG_DIR}/sites-enabled/*.conf; do
   if test ! -L ${as_file}; then
@@ -36,3 +31,8 @@ for as_file in ${APKG_CFG_DIR}/sites-enabled/*.conf; do
     done
   fi
 done
+
+# Reset /etc/hosts
+if test -f /usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh; then
+  /usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh reload
+fi
