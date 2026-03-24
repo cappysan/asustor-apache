@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Don't restart Docker when reloading persistence
-
+- File locations
 
 ## 2.4.65-r7 - 2026-03-22
 

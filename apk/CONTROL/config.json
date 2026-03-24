@@ -3,15 +3,14 @@
     "architecture": "x86-64",
     "conflicts": [],
     "depends": [
-      "httpd-2.4.43",
-      "jq"
+      "httpd-2.4.43"
     ],
     "email": "julien@cappysan.dev",
     "firmware": "5.0.0",
     "maintainer": "Cappysan",
     "name": "Apache",
     "package": "cappysan-apache",
-    "version": "2.4.62-r7",
+    "version": "2.4.62-r12",
     "developer": "Apache Software Foundation",
     "website": "https://gitlab.com/cappysan/asustor/apache"
   },

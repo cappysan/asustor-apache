@@ -1,0 +1,13 @@
+# Functions
+# =========
+function logger() {
+  echo "${@}" >&2
+  syslog --log 0 --level 0 --user SYSTEM --event "${@}"
+}
+
+# User
+# ====
+APKG_USER=as-www-data
+APKG_GROUP=root
+
+# vim: ft=sh
