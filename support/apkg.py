@@ -215,7 +215,7 @@ class Apkg:
         py_files = glob.glob(control_dir + "/*.py")
 
         for one_file in all_files:
-            os.chmod(one_file, 0o644)
+            # os.chmod(one_file, 0o644)
             os.chown(one_file, 0, 0)
 
         for one_file in sh_files:

@@ -49,7 +49,6 @@ done
 
 # Dependencies
 # ============
-# Reset /etc/hosts
 export DOCKER_NO_RELOAD=1
 /usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh reload
 /usr/local/AppCentral/cappysan-certbot/CONTROL/start-stop.sh reload

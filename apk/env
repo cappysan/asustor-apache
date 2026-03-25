@@ -5,6 +5,10 @@ function logger() {
   syslog --log 0 --level 0 --user SYSTEM --event "${@}"
 }
 
+
+WHAT=Apache
+export HOME=/share/Configuration/apache
+
 # User
 # ====
 APKG_USER=as-www-data

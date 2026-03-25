@@ -26,18 +26,16 @@ useradd --system --no-create-home --home-dir ${APKG_CFG_DIR}/ --gid nogroup --sh
 
 # Configuration folder
 # ====================
-# Don't overwrite user permissions if set manually
-if test ! -d ${APKG_CFG_DIR}; then
-  mkdir -p ${APKG_CFG_DIR}
-  chown -R ${APKG_USER}:${APKG_GROUP} ${APKG_CFG_DIR}
-  chmod 750 ${APKG_CFG_DIR}
-fi
+mkdir -p ${APKG_CFG_DIR}
+chown -R ${APKG_USER}:${APKG_GROUP} ${APKG_CFG_DIR}
+chmod 750 ${APKG_CFG_DIR}
 
 
 # Configuration
 # =============
 # Don't override files that could have been user modified.
 rsync -a --inplace --ignore-existing ${APKG_PKG_DIR}/conf.dist/ ${APKG_CFG_DIR}
-chown -R ${APKG_USER}:${APKG_GROUP} ${APKG_CFG_DIR}/*
+chown -R ${APKG_USER}:${APKG_GROUP} ${APKG_CFG_DIR}
 
+logger "[${WHAT}] Application installed."
 exit 0

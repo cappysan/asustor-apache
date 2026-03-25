@@ -9,17 +9,16 @@ LD_LIBRARY_PATH="${APKG_PKG_DIR}/lib:${LD_LIBRARY_PATH}"
 mkdir -p  /var/log/apache /var/run/apache
 chmod 750 /var/log/apache /var/run/apache
 
-export HOME=/share/Configuration/apache
 case $1 in
   start)
-    logger "[Apache] Starting daemon..."
+    logger "[${WHAT}] Starting daemon..."
     touch "${APKG_PKG_DIR}/active"
     ./CONTROL/start-hook.sh
     ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k start
     ;;
 
   stop)
-    logger "[Apache] Stopping daemon..."
+    logger "[${WHAT}] Stopping daemon..."
     rm -f "${APKG_PKG_DIR}/active"
     ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful-stop
     ;;
@@ -30,10 +29,12 @@ case $1 in
     ;;
 
   reload)
-    logger "[Apache] Reloading daemon..."
     if test -f "${APKG_PKG_DIR}/active"; then
-    ./CONTROL/start-hook.sh
-    ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful
+      logger "[${WHAT}] Graceful daemon restart..."
+      ./CONTROL/start-hook.sh
+      ${APKG_PKG_DIR}/apache/bin/apache2 -e warn -d "${APKG_PKG_DIR}/apache" -f "${APKG_PKG_DIR}"/apache/apache.conf -k graceful
+    else
+      logger "[${WHAT}] Service is stopped, cannot reload."
     fi
     ;;
 
@@ -41,6 +42,6 @@ case $1 in
     echo "usage: $0 {start|stop|restart|reload}"
     exit 1
     ;;
-
 esac
+
 exit 0

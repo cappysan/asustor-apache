@@ -4,7 +4,7 @@ Changes relevant to the users of Cappysan's Asustor Apache APK are documented he
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 2.4.65-r13 - 2026-03-22
 
 ### Changed
 
