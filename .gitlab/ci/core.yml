@@ -177,7 +177,7 @@ variables:
 
   # !reference [".core:rules:not_if", not_if_protected]
   not_if_protected:
-    - not_if: $CI_COMMIT_REF_PROTECTED != "true"
+    - if: $CI_COMMIT_REF_PROTECTED != "true"
       when: never
 
   # !reference [".core:rules:not_if", is_default_branch]
@@ -195,7 +195,7 @@ variables:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
       when: never
 
-  # !reference [".core:rules:not_if", if_protected]
+  # !reference [".core:rules:not_if", is_not_protected]
   is_not_protected:
     - if: $CI_COMMIT_REF_PROTECTED != "true"
       when: never
