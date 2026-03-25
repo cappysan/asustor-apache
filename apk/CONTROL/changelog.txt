@@ -5,11 +5,12 @@ Changes relevant to the users of Cappysan's Asustor Apache APK are documented he
 This project adheres to [Semantic Versioning](https://semver.org/).
 
 
-## 2.4.65-r15 - 2026-03-25
+## 2.4.65-r16 - 2026-03-25
 
 ### Changed
 
 - Don't restart certbot
+- Copy files from {PKG}/deps.d with overwrite, and {CFG}/deps.d without
 
 
 ## 2.4.65-r13 - 2026-03-22

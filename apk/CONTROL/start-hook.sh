@@ -26,8 +26,12 @@ cp -f ${APKG_CFG_DIR}/deps.d/logrotate.d/* /etc/logrotate.d/
 # ===============
 for as_dir in /usr/local/AppCentral/cappysan-*/deps.d/apache/sites-available/; do
   if test -d "${as_dir}"; then
-    rsync -a --inplace --ignore-existing ${as_dir}/ \
-      ${APKG_CFG_DIR}/sites-available/
+    rsync -a --inplace ${as_dir}/ ${APKG_CFG_DIR}/sites-available/
+  fi
+done
+for as_dir in /share/Configuration/*/deps.d/apache/sites-available/; do
+  if test -d "${as_dir}"; then
+    rsync -a --inplace --ignore-existing ${as_dir}/ ${APKG_CFG_DIR}/sites-available/
   fi
 done
 
