@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 [project]
 name = "cappysan-apache"
-version = "2.4.62-r13"
+version = "2.4.62-r15"
 authors = [
   {name = "Julien Lecomte", email = "julien@cappysan.dev"}
 ]
@@ -24,7 +24,7 @@ Homepage = "https://gitlab.com/cappysan/asustor/apache"
 # Other tools
 # ------------------------------------------------------------------------------
 [tool.bumpversion]
-current_version = "2.4.62-r13"
+current_version = "2.4.62-r15"
 
 parse = """(?x)
   (?P<major>0|[1-9]\\d*)\\.
