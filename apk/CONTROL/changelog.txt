@@ -4,12 +4,21 @@ Changes relevant to the users of Cappysan's Asustor Apache APK are documented he
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+
+## 2.4.65-r15 - 2026-03-25
+
+### Changed
+
+- Don't restart certbot
+
+
 ## 2.4.65-r13 - 2026-03-22
 
 ### Changed
 
 - Don't restart Docker when reloading persistence
 - File locations
+
 
 ## 2.4.65-r7 - 2026-03-22
 

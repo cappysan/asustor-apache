@@ -49,7 +49,8 @@ done
 
 # Dependencies
 # ============
-export DOCKER_NO_RELOAD=1
+export DOCKER_RELOAD=${DOCKER_RELOAD:-0}
+export CERTBOT_RELOAD=${CERTBOT_RELOAD:-0}
 /usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh reload
 /usr/local/AppCentral/cappysan-certbot/CONTROL/start-stop.sh reload
 

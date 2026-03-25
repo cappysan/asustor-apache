@@ -1,9 +1,8 @@
 #!/usr/bin/env sh
+# SPDX-License-Identifier: MIT
 
 . /usr/local/AppCentral/cappysan-apache/.env.install
 
-if test -f "${APKG_PKG_DIR}/active"; then
-  ${APKG_PKG_DIR}/CONTROL/start-stop.sh reload
-fi
+${APKG_PKG_DIR}/CONTROL/start-stop.sh reload
 
 exit 0
