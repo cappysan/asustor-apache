@@ -14,8 +14,6 @@ The Apache HTTP Server is a free and open-source cross-platform web server.
 
 The APK application is available as a GitLab release, and on [https://asustor.cappysan.dev/](https://asustor.cappysan.dev/)
 
-The APK application is not available as an Asustor App Central application as Asustor does not accept duplicates, even if they differ.
-
 
 ## Usage <a name="usage"></a>
 
@@ -26,15 +24,9 @@ More documentation can be found at [https://blog.cappysan.dev/asustor/](https://
 
 ### Installing
 
-- Download the APK file from Cappysan's Asustor website ([https://asustor.cappysan.dev/apache](https://asustor.cappysan.dev/apache)  
-- Install the package
-- A share folder named "Configuration" will be created. Configure it to only enable admins in read-write mode. Deny anonymous and user access.
-- Ensure you can modify files in the "Configuration/cerbot" with either SSH, a mount point, or the Asustor File Explorer.
+In brief, modify the files in "/share/Configuration/persistence" to your liking and restart the service.
 
-
-### Configuration
-
-Files within the `Configuration` shared folder can be modified via SSH or by exporting the shared folder through NFS, SMB, FTP, ...
+More documentation can be found at [https://blog.cappysan.dev/asustor/](https://blog.cappysan.dev/asustor/)
 
 
 ## Support & Sponsorship <a name="support"></a>
