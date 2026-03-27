@@ -4,6 +4,12 @@ Changes relevant to the users of Cappysan's Asustor Apache APK are documented he
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 2.4.65-r20 - 2026-03-27
+
+### Changed
+
+- Disable certbot during renewal-hook because of infinite loop risk
+
 
 ## 2.4.65-r19 - 2026-03-25
 

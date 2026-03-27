@@ -3,6 +3,7 @@
 
 . /usr/local/AppCentral/cappysan-apache/.env.install
 
+export CERTBOT_RELOAD=0
 ${APKG_PKG_DIR}/CONTROL/start-stop.sh reload
 
 exit 0
