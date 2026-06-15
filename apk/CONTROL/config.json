@@ -29,5 +29,22 @@
       "80",
       "443"
     ]
+  },
+  "adm-desktop": {
+    "app": {
+      "type": "internal",
+      "js": [
+        "apache.js"
+      ],
+      "css": [
+        "apache.css"
+      ],
+      "module": "AS.ARC.apps.cappysanapache.main",
+      "langTag": "APACHE"
+    },
+    "privilege": {
+      "accessible": "administrators",
+      "customizable": false
+    }
   }
 }

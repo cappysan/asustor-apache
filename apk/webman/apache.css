@@ -1,0 +1,8 @@
+.app-cappysan-apache .x-fieldset-header-text {
+    font-weight: bold !important;
+}
+
+.apache-conf-view textarea {
+    font-family: "Lucida Console", "Courier New", Courier, monospace !important;
+    font-size:   13px !important;
+}
