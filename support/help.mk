@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+#
 # Show help
 .PHONY: help
 help:

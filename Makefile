@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+#
 include support/*.mk
 
 .DEFAULT_GOAL:= all
