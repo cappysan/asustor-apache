@@ -9,9 +9,12 @@ APKG_CFG_DIR=/share/Configuration/apache
 export APKG_CFG_DIR APKG_PKG_VER APKG_PKG_SHORT_VER
 env | grep APKG | grep -v APKG_PKG_STATUS \
   | grep -v " " | sort > ${APKG_PKG_DIR}/.env.install
+# ------------------------------------------------------------------------------
 
 cd ${APKG_PKG_DIR:-/nonexistent} || exit 1
-. ${APKG_PKG_DIR}/env
+if test -f ${APKG_PKG_DIR}/env; then
+  . ${APKG_PKG_DIR}/env
+fi
 
 # Permissions
 # ===========
@@ -38,4 +41,6 @@ rsync -a --inplace --ignore-existing ${APKG_PKG_DIR}/conf.dist/ ${APKG_CFG_DIR}
 chown -R ${APKG_USER}:${APKG_GROUP} ${APKG_CFG_DIR}
 
 logger "[${WHAT}] Application installed."
+
+# ------------------------------------------------------------------------------
 exit 0

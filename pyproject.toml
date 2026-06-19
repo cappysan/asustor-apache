@@ -5,26 +5,26 @@
 # Setup
 # ------------------------------------------------------------------------------
 [project]
+dynamic = ["dependencies"]
+
 name = "cappysan-apache"
-version = "2.4.62-r20"
+version = "2.4.62-r42"
 authors = [
   {name = "Julien Lecomte", email = "julien@cappysan.dev"}
 ]
 readme  = "README.md"
-description = "Asustor Apache application"
+description = "Asustor Apache application."
 license = "MIT"
 
+
 [project.urls]
-
 Homepage = "https://gitlab.com/cappysan/asustor/apache"
-
-
 
 # ------------------------------------------------------------------------------
 # Other tools
 # ------------------------------------------------------------------------------
 [tool.bumpversion]
-current_version = "2.4.62-r20"
+current_version = "2.4.62-r42"
 
 parse = """(?x)
   (?P<major>0|[1-9]\\d*)\\.
@@ -32,6 +32,7 @@ parse = """(?x)
   (?P<patch>0|[1-9]\\d*)
   -r(?P<rev>0|[1-9]\\d*)
 """
+serialize = [ "{major}.{minor}.{patch}-r{rev}" ]
 
 search = "{current_version}"
 replace = "{new_version}"
@@ -49,29 +50,25 @@ moveable_tags = []
 commit_args = ""
 setup_hooks = []
 pre_commit_hooks = [
+
   "precommit autoupdate",
+
   "make pc",
 ]
 post_commit_hooks = []
 
-
-serialize = [
-  "{major}.{minor}.{patch}-r{rev}",
-]
-
 [tool.bumpversion.parts.rev]
 first_value = "1"
 
-[[tool.bumpversion.files]]
-filename = "apk/CONTROL/config.json"
 
-# .answers.yml contains the current version in "version"/"scaffold.version"
 [[tool.bumpversion.files]]
 filename = ".answers.yml"
 
-# pyproject.toml contains the current version in "tool.bumpversion.current_version"
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
+
+[[tool.bumpversion.files]]
+filename = "apk/CONTROL/config.json"
 
 
 [tool.codespell]

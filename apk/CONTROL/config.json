@@ -3,6 +3,7 @@
     "architecture": "x86-64",
     "conflicts": [],
     "depends": [
+      "python3(>=3.10.0)",
       "httpd-2.4.43"
     ],
     "email": "julien@cappysan.dev",
@@ -10,25 +11,9 @@
     "maintainer": "Cappysan",
     "name": "Apache",
     "package": "cappysan-apache",
-    "version": "2.4.62-r20",
-    "developer": "Apache Software Foundation",
+    "version": "2.4.62-r42",
+    "developer": "Cappysan",
     "website": "https://gitlab.com/cappysan/asustor/apache"
-  },
-  "register": {
-    "share-folder": [
-      {
-        "name": "Configuration",
-        "description": "Application configuration"
-      }
-    ],
-    "boot-priority": {
-      "start-order": 70,
-      "stop-order": 30
-    },
-    "port": [
-      "80",
-      "443"
-    ]
   },
   "adm-desktop": {
     "app": {
@@ -39,12 +24,25 @@
       "css": [
         "apache.css"
       ],
-      "module": "AS.ARC.apps.cappysanapache.main",
+      "module": "AS.ARC.apps.apache.main",
       "langTag": "APACHE"
     },
     "privilege": {
       "accessible": "administrators",
       "customizable": false
+    }
+  },
+  "register": {
+    "share-folder": [
+      {
+        "name": "Configuration",
+        "description": "Application configuration"
+      }
+    ],
+    "boot-priority": {
+      "x-comment": "docker-ce start order is 65",
+      "start-order": 70,
+      "stop-order": 30
     }
   }
 }

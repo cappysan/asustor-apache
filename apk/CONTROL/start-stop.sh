@@ -1,9 +1,12 @@
 #!/usr/bin/env sh
 # SPDX-License-Identifier: MIT
 #
+# ------------------------------------------------------------------------------
 . /usr/local/AppCentral/cappysan-apache/.env.install
 cd ${APKG_PKG_DIR:-/nonexistent} || exit 1
-. ${APKG_PKG_DIR}/env
+if test -f ${APKG_PKG_DIR}/env; then
+  . ${APKG_PKG_DIR}/env
+fi
 
 LD_LIBRARY_PATH="${APKG_PKG_DIR}/lib:${LD_LIBRARY_PATH}"
 mkdir -p  /var/log/apache /var/run/apache

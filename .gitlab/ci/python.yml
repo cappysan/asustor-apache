@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+#
 ---
 variables:
   PYTHON: python3
@@ -326,10 +328,51 @@ variables:
       - public/reports
     reports:
       junit: public/reports/unit-tests.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: public/reports/coverage.xml
   rules:
     - when: always
 # ]]
 
+
+# ------------------------------------------------------------------------------
+# coverage => python:radon [[
+# ------------------------------------------------------------------------------
+.python:radon:
+  extends: .python:defaults
+  stage: coverage
+  variables:
+    PYTHON_APT_EXTRA_PACKAGES: "radon"
+    MAKEFILE_TARGET: ""
+    # Add an empty line at the end to avoid a 0 byte file which gitlab doesn't
+    # really like.
+  script:
+    - mkdir -pv public/reports
+    - |
+      #
+      section_start "run_radon_cc" "Running radon cc on current package"
+      radon cc --min B --no-assert -sa --total-average src | tee public/reports/radon-cc.txt
+      echo "" >> public/reports/radon-cc.txt
+      radon cc --no-assert -sa --total-average --codeclimate -O public/reports/radon-cc.json src
+      section_end "run_radon_cc"
+
+    - |
+      #
+      section_start "run_radon_mi" "Running radon mi on current package"
+      radon mi --min B -s src | tee public/reports/radon-mi.txt
+      echo "" >> public/reports/radon-mi.txt
+      radon mi --json -s -O public/reports/radon-mi.json src
+      section_end "run_radon_mi"
+  artifacts:
+    when: always
+    paths:
+      - public/reports
+    reports:
+      codequality: public/reports/radon-cc.json
+  rules:
+    - when: always
+# ]]
 
 # ------------------------------------------------------------------------------
 # build => python:package:build [[
@@ -535,9 +578,9 @@ variables:
       aud: $TWINE_REPOSITORY
   artifacts: null
   rules:
+    - !reference [".core:rules:not_if", is_merge_request]
     - !reference [".core:rules:not_if", is_not_protected]
-    - !reference [".core:rules:if", is_tag]
-    - when: never
+    - !reference [".core:rules:not_if", is_not_tag]
 # ]]
 #
 # vim: foldmarker=[[,]] foldmethod=marker

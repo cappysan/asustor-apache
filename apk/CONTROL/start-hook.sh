@@ -24,20 +24,15 @@ cp -f ${APKG_CFG_DIR}/deps.d/logrotate.d/* /etc/logrotate.d/
 
 # Sites Available
 # ===============
-# Ensure with a first pass that default site configs are always present
-rsync -a --inplace --ignore-existing ${APKG_PKG_DIR}/conf.dist/sites-available/ ${APKG_CFG_DIR}/sites-available/
+# Install configuration files
+# post-install installs the files from PKG_DIR to CFG_DIR, with no overwrite.
+# if user modifies the CFG_DIR files, that those modifications into account.
 
-for as_dir in /usr/local/AppCentral/cappysan-*/deps.d/apache/sites-available/; do
-  if test -d "${as_dir}"; then
-    rsync -a --inplace ${as_dir}/ ${APKG_CFG_DIR}/sites-available/
-  fi
-done
-for as_dir in /share/Configuration/*/deps.d/apache/sites-available/; do
-  if test -d "${as_dir}"; then
-    rsync -a --inplace --ignore-existing ${as_dir}/ ${APKG_CFG_DIR}/sites-available/
-  fi
-done
-
+# for as_dir in /share/Configuration/*/deps.d/apache/sites-available/; do
+#   if test -d "${as_dir}"; then
+#     rsync -a --inplace ${as_dir}/ ${APKG_CFG_DIR}/sites-available/
+#   fi
+# done
 
 # Symlinks
 # ========

@@ -1,6 +1,5 @@
-### Project specifics ###
-/*.apk*
-
+# SPDX-License-Identifier: MIT
+#
 ### Generic ###
 /.env
 /.cache/
@@ -10,3 +9,6 @@
 /.python-version
 /.tox/
 /.venv*/
+
+### Project specifics ###
+/*.apk*
