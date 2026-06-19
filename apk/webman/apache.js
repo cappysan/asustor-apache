@@ -31,6 +31,9 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 afterrender: function (win) {
                     win.header.items.items[1].hide();
                     fn.navGrid.getSelectionModel().select(0);
+                },
+                resize: function () {
+                    fn.resizeSiteContent();
                 }
             }
         });
@@ -45,8 +48,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 fields: ['title', 'tabId'],
                 data: [
                     [_S('APACHE', 'TAB_SETTINGS'), 'settings'],
-                    [_S('APACHE', 'TAB_SITES'),    'sites'],
-                    [_S('APACHE', 'TAB_HOSTS'),    'hosts']
+                    [_S('APACHE', 'TAB_SITES'),    'sites']
                 ]
             }),
             hideHeaders: true,
@@ -57,8 +59,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 renderer: function (v, metadata, record) {
                     var icons = {
                         settings: AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-fn-settings.png'),
-                        sites:    AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-fn-sites.png'),
-                        hosts:    AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-fn-hosts.png')
+                        sites:    AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-fn-sites.png')
                     };
                     var iconUrl = icons[record.data.tabId] || icons.settings;
                     return '<div class="fn-block">' +
@@ -93,8 +94,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 fn.win.el.unmask();
                 cardPanel.removeAll();
                 if (tabId === 'settings') { fn.renderSettingsTab(cardPanel, json); }
-                if (tabId === 'sites')    { fn.renderSitesTab(cardPanel, json); }
-                if (tabId === 'hosts')    { fn.renderHostsTab(cardPanel, json); }
+                if (tabId === 'sites')    { fn.renderSitesTab(cardPanel, json); Ext.defer(function () { fn.resizeSiteContent(); }, 150); }
             },
             failure: function (json) {
                 fn.win.el.unmask();
@@ -197,6 +197,8 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
             itemId:  'sitesGrid',
             store:   store,
             border:  false,
+            anchor:  '100%',
+            height:  200,
             columns: [{
                 text:      _S('APACHE', 'COL_SITE_NAME'),
                 dataIndex: 'name',
@@ -224,17 +226,22 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
         });
 
         cardPanel.add(Ext.create('Ext.panel.Panel', {
-            cls:    'as-page-panel app-cappysan-apache',
-            border: false,
-            layout: { type: 'vbox', align: 'stretch' },
+            cls:        'as-page-panel app-cappysan-apache',
+            border:     false,
+            layout:     'anchor',
+            autoScroll: true,
+            defaults:   { anchor: '100%' },
             items: [{
-                xtype:  'panel',
-                border: false,
-                flex:   3,
-                layout: 'fit',
-                dockedItems: [{
+                xtype:    'fieldset',
+                title:    _S('APACHE', 'SECTION_SITES'),
+                defaults: { anchor: '100%' },
+                items: [{
+                    xtype:  'box',
+                    autoEl: { tag: 'div' },
+                    style:  'margin-bottom: 8px;',
+                    html:   'Notice: /etc/hosts entries can be configured with the cappysan-persistence package.'
+                }, {
                     xtype: 'toolbar',
-                    dock:  'top',
                     items: [{
                         text:     _S('APACHE', 'BTN_ENABLE'),
                         itemId:   'enableBtn',
@@ -246,17 +253,16 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                         disabled: true,
                         handler:  function () { fn.toggleSite(false); }
                     }]
-                }],
-                items: [grid]
+                }, grid]
             }, {
-                border: false,
-                xtype:  'fieldset',
-                title:  _S('APACHE', 'SECTION_SITE_CONTENT'),
-                flex:   2,
-                layout: 'fit',
+                xtype:    'fieldset',
+                title:    _S('APACHE', 'SECTION_SITE_CONTENT'),
+                defaults: { anchor: '100%' },
                 items: [{
                     xtype:    'textarea',
                     itemId:   'siteContent',
+                    anchor:   '100%',
+                    height:   140,
                     readOnly: true,
                     cls:      'apache-conf-view',
                     value:    ''
@@ -307,233 +313,109 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
         });
     },
 
-        /* ── Hosts tab ──────────────────────────────────────────────────────── */
-    renderHostsTab: function (cardPanel, json) {
-        var fn   = this,
-            rows = [];
+        /* ── Persistence link ──────────────────────────────────────────────────── */
+    openPersistenceHosts: function () {
+        var fn      = this,
+            launched = false;
 
-        if (json.content) {
-            Ext.each(json.content.split('\n'), function (line) {
-                line = Ext.String.trim(line);
-                if (!line || line.charAt(0) === '#') { return; }
-                var parts = line.split(/[ \t]+/);
-                if (parts.length >= 2) {
-                    rows.push({ ip: parts[0], host: parts.slice(1).join(' ') });
+        // Walk all registered ExtJS components looking for persistence app
+        try {
+            Ext.ComponentManager.each(function (id, cmp) {
+                if (cmp && cmp.appTag === 'cappysan-persistence' && cmp.createWindow) {
+                    cmp.createWindow();
+                    launched = true;
+                    return false;
                 }
             });
-        }
+        } catch (e) {}
 
-        var store = Ext.create('Ext.data.Store', {
-            fields: ['ip', 'host'],
-            data:   rows
-        });
-
-        var grid = Ext.create('Ext.grid.Panel', {
-            itemId:  'hostsGrid',
-            store:   store,
-            border:  false,
-            anchor:  '100%',
-            height:  200,
-            columns: [{
-                text:      _S('APACHE', 'COL_IP'),
-                dataIndex: 'ip',
-                flex:      1
-            }, {
-                text:      _S('APACHE', 'COL_HOST'),
-                dataIndex: 'host',
-                flex:      2
-            }],
-            dockedItems: [{
-                xtype: 'toolbar',
-                dock:  'top',
-                items: [{
-                    xtype: 'displayfield',
-                    value: _S('APACHE', 'WARN_HOSTS_PERSISTENCE')
-                }]
-            }, {
-                xtype: 'toolbar',
-                dock:  'top',
-                items: [{
-                    text:    _S('APACHE', 'BTN_ADD'),
-                    handler: function () { fn.showHostPopup('add', null, store); }
-                }, {
-                    text:     _S('APACHE', 'BTN_MODIFY'),
-                    itemId:   'hostsModifyBtn',
-                    disabled: true,
-                    handler: function () {
-                        var sel = grid.getSelectionModel().getSelection();
-                        if (sel.length) { fn.showHostPopup('modify', sel[0], store); }
-                    }
-                }, {
-                    text:     _S('APACHE', 'BTN_DELETE'),
-                    itemId:   'hostsDeleteBtn',
-                    disabled: true,
-                    handler: function () {
-                        var sel = grid.getSelectionModel().getSelection();
-                        if (sel.length) { store.remove(sel); }
-                    }
-                }]
-            }],
-            listeners: {
-                selectionchange: function (model, sel) {
-                    var has = sel.length > 0;
-                    grid.down('#hostsModifyBtn').setDisabled(!has);
-                    grid.down('#hostsDeleteBtn').setDisabled(!has);
-                }
-            }
-        });
-
-        cardPanel.add(Ext.create('Ext.panel.Panel', {
-            cls:    'as-page-panel app-cappysan-apache',
-            border: false,
-            layout: 'border',
-            items: [{
-                region:  'north',
-                border:  false,
-                xtype:   'fieldset',
-                title:   _S('APACHE', 'TAB_HOSTS'),
-                height:  280,
-                defaults: { anchor: '100%' },
-                layout:  'anchor',
-                items:   [grid]
-            }, {
-                region:  'center',
-                border:  false,
-                xtype:   'fieldset',
-                title:   _S('APACHE', 'SECTION_RESULT'),
-                defaults: { anchor: '100%' },
-                layout:  'fit',
-                items: [{
-                    xtype:    'textarea',
-                    readOnly: true,
-                    cls:      'apache-conf-view',
-                    value:    json.content || ''
-                }]
-            }],
-            dockedItems: [{
-                xtype: 'toolbar',
-                dock:  'bottom',
-                ui:    'footer',
-                items: [
-                    { xtype: 'component', flex: 1 },
-                    {
-                        xtype:   'button',
-                        text:    _S('COMMON', 'APPLY'),
-                        handler: function () { fn.saveHostsTab(); }
-                    }
-                ]
-            }]
-        }));
-    },
-
-    showHostPopup: function (mode, record, store) {
-        var fn       = this,
-            isModify = (mode === 'modify');
-
-        fn.hostPopup = Ext.create('AS.ARC.msgWindow', {
-            parentWin: fn.win,
-            title:     isModify ? _S('APACHE', 'POPUP_TITLE_MODIFY') : _S('APACHE', 'POPUP_TITLE_ADD'),
-            width:     480,
-            height:    200,
-            iconType:  'info',
-            asItems: [{
-                xtype:      'textfield',
-                fieldLabel: AS.ARC.util.fontToBold(_S('APACHE', 'LABEL_IP_ADDRESS')),
-                itemId:     'popupIp',
-                labelWidth: 70,
-                width:      340,
-                value:      isModify ? record.get('ip') : ''
-            }, {
-                xtype:      'textfield',
-                fieldLabel: AS.ARC.util.fontToBold(_S('APACHE', 'COL_HOST')),
-                itemId:     'popupHost',
-                labelWidth: 70,
-                width:      340,
-                value:      isModify ? record.get('host') : ''
-            }],
-            fbar: [{
-                text:    _S('COMMON', 'OK'),
-                handler: function () {
-                    var ipFld = fn.hostPopup.down('#popupIp'),
-                        hFld  = fn.hostPopup.down('#popupHost');
-
-                    if (!ipFld || !hFld) { return; }
-
-                    var ip   = Ext.String.trim(ipFld.getValue()),
-                        host = Ext.String.trim(hFld.getValue());
-
-                    var ipv4Re = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-                    var ipv6Re = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
-
-                    if (!ip) {
-                        ipFld.markInvalid(_S('APACHE', 'ERR_INVALID_IP'));
-                        return;
-                    }
-                    if (!ipv4Re.test(ip) && !ipv6Re.test(ip)) {
-                        ipFld.markInvalid(_S('APACHE', 'ERR_INVALID_IP'));
-                        return;
-                    }
-                    if (!host) {
-                        hFld.markInvalid(_S('COMMON', 'REQUIRED'));
-                        return;
-                    }
-                    if (ip.indexOf("'") !== -1 || ip.indexOf('"') !== -1) {
-                        ipFld.markInvalid(_S('APACHE', 'ERR_NO_QUOTES'));
-                        return;
-                    }
-                    if (host.indexOf("'") !== -1 || host.indexOf('"') !== -1) {
-                        hFld.markInvalid(_S('APACHE', 'ERR_NO_QUOTES'));
-                        return;
-                    }
-
-                    if (isModify) {
-                        record.set('ip',   ip);
-                        record.set('host', host);
-                    } else {
-                        store.add({ ip: ip, host: host });
-                    }
-                    fn.hostPopup.close();
-                }
-            }, {
-                text:    _S('COMMON', 'CANCEL'),
-                handler: function () { fn.hostPopup.close(); }
-            }]
-        });
-
-        fn.hostPopup.show();
-    },
-
-    saveHostsTab: function () {
-        var fn    = this,
-            grid  = fn.win.down('#hostsGrid'),
-            lines = [];
-
-        grid.getStore().each(function (rec) {
-            var ip   = Ext.String.trim(rec.get('ip')),
-                host = Ext.String.trim(rec.get('host'));
-            if (ip && host) { lines.push(ip + '\t' + host); }
-        });
-
-        fn.win.el.mask(_S('COMMON', 'APPLYING'));
-        AS.ARC.ajax({
-            url:    AS.ARC.util.getApiUrlWithSid(fn.apiUrl, { act: 'set', tab: 'hosts' }),
-            method: 'post',
-            params: { content: lines.join('\n') },
-            success: function (json) {
-                fn.win.el.unmask();
-                if (json && json.warning) {
-                    AS.ARC.msgWindow.show({ parentWin: fn.win, title: _S('COMMON', 'WARNING'), width: 400, height: 160, iconType: 'warn',
-                        asItems: [{ xtype: 'displayfield', value: json.warning }],
-                        fbar: [{ text: _S('COMMON', 'OK'), handler: function () { this.up('window').close(); } }]
+        // Try taskbar items
+        if (!launched) {
+            try {
+                var tb = fn.app.core.getDesktop().taskBar;
+                if (tb && tb.items) {
+                    tb.items.each(function (item) {
+                        if (item.app && item.app.appTag === 'cappysan-persistence') {
+                            item.app.createWindow();
+                            launched = true;
+                            return false;
+                        }
                     });
                 }
-                fn.switchTab('hosts');
-            },
-            failure: function (json) {
-                fn.win.el.unmask();
-                AS.ARC.util.showMsgWindow({ 5000: _S('COMMON', 'SESSION_TIMEOUT') }, json, fn.win);
+            } catch (e) {}
+        }
+
+        if (!launched) {
+            Ext.Msg.alert(
+                'cappysan-persistence',
+                'Please open cappysan-persistence from the desktop and go to the Hosts tab.'
+            );
+        }
+    },
+
+    /* ── Persistence launcher ──────────────────────────────────────────── */
+    launchPersistence: function () {
+        // Try every known way to launch a third-party ADM app
+        var fn = this;
+
+        // 1. AS.ARC.core.openApp (works for built-in app-* apps; try the package name)
+        try {
+            if (AS.ARC.core && AS.ARC.core.openApp) {
+                AS.ARC.core.openApp('cappysan-persistence', 'hosts');
+                return;
             }
-        });
+        } catch (e) {}
+
+        // 2. Direct module instantiation: each ADM app exposes AS.ARC.apps.<name>.main
+        try {
+            if (Ext.ClassManager.isCreated('AS.ARC.apps.persistence.main')) {
+                var app = Ext.create('AS.ARC.apps.persistence.main', { core: fn.app.core });
+                if (app && app.createWindow) {
+                    app.createWindow();
+                    return;
+                }
+            }
+        } catch (e) {}
+
+        // 3. Walk the desktop taskbar
+        try {
+            var tb = fn.app.core.getDesktop().taskBar;
+            if (tb && tb.items) {
+                var found = false;
+                tb.items.each(function (item) {
+                    if (item.app && item.app.appTag === 'cappysan-persistence') {
+                        item.app.createWindow();
+                        found = true;
+                        return false;
+                    }
+                });
+                if (found) { return; }
+            }
+        } catch (e) {}
+
+        Ext.Msg.alert('cappysan-persistence',
+            'Could not open cappysan-persistence. Please open it from the desktop and go to the Hosts tab.');
+    },
+
+    /* ── Resize ─────────────────────────────────────────────────────────── */
+    resizeSiteContent: function () {
+        var fn       = this,
+            win      = fn.win,
+            textarea = win.down('#siteContent');
+
+        if (!textarea || !textarea.el) { return; }
+
+        var winHeight    = win.getHeight(),
+            taEl         = textarea.el,
+            taTop        = taEl.getTop(),
+            winTop       = win.el.getTop(),
+            footerHeight = 0,
+            padding      = 16,
+            newHeight    = winHeight - (taTop - winTop) - footerHeight - padding;
+
+        if (newHeight > 60) {
+            textarea.setHeight(newHeight);
+        }
     },
 
     /* ── Layout ─────────────────────────────────────────────────────────── */
@@ -563,7 +445,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
     }
 });
 
-Ext.define('AS.ARC.apps.cappysanapache.main', {
+Ext.define('AS.ARC.apps.apache.main', {
     extend:     'AS.ARC._appBase',
     appTag:     'cappysan-apache',
     title:      'Apache',

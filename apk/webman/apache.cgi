@@ -334,6 +334,14 @@ __PY__
         esac
         ;;
 
+    check_persistence)
+        if [ -f "/usr/local/AppCentral/cappysan-persistence/CONTROL/config.json" ]; then
+            respond '{"success":true,"installed":true}'
+        else
+            respond '{"success":true,"installed":false}'
+        fi
+        ;;
+
     *)
         respond '{"success":false,"error_code":400,"error_msg":"Unknown action"}'
         ;;
