@@ -331,7 +331,7 @@ if admin_email:
 rewrite_custom_env(os.path.join(cfg_dir, 'custom.env'), 'WEB_URL_OVERRIDE', url_override)
 __PY__
 
-                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload 2>&1
+                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload >/dev/null 2>&1
                 respond '{"success":true}'
                 ;;
 
@@ -373,7 +373,7 @@ __PY__
                     rm -f "$CONF_ENABLED" 2>/dev/null
                 fi
 
-                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload 2>&1
+                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload >/dev/null 2>&1
                 respond '{"success":true}'
                 ;;
 
@@ -390,7 +390,7 @@ __PY__
                 PERSIST_SCRIPT="/usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh"
                 if [ ! -f "$PERSIST_SCRIPT" ]; then
                     respond '{"success":true,"warning":"cappysan-persistence package is not installed."}'
-                elif ! "$PERSIST_SCRIPT" restart 2>&1; then
+                elif ! "$PERSIST_SCRIPT" restart >/dev/null 2>&1; then
                     respond '{"success":true,"warning":"Failed to restart cappysan-persistence."}'
                 else
                     respond '{"success":true}'
@@ -428,24 +428,51 @@ try:
 except Exception:
     lines = []
 
+keys_found = {
+    'hostname':    False,
+    'server_fqdn': False,
+    'redirect_to': False,
+    'proxy_to':    False,
+}
+
 out = []
 for line in lines:
     if line.startswith('Define hostname '):
         out.append('Define hostname    %s\n' % hostname)
+        keys_found['hostname'] = True
     elif line.startswith('Define server_fqdn '):
         out.append('Define server_fqdn %s\n' % fqdn)
+        keys_found['server_fqdn'] = True
     elif line.startswith('Define redirect_to '):
         out.append('Define redirect_to %s\n' % redirect)
+        keys_found['redirect_to'] = True
     elif line.startswith('Define proxy_to '):
-        out.append('Define proxy_to %s\n' % proxy_to)
+        out.append('Define proxy_to    %s\n' % proxy_to)
+        keys_found['proxy_to'] = True
     else:
         out.append(line)
+
+# If the file was missing, empty, or simply never had these Define lines
+# (e.g. fresh install before conf.dist seeding ran), write them fresh so
+# the save is never silently a no-op.
+prelude = []
+if not keys_found['hostname']:
+    prelude.append('Define hostname    %s\n' % hostname)
+if not keys_found['server_fqdn']:
+    prelude.append('Define server_fqdn %s\n' % fqdn)
+if not keys_found['redirect_to']:
+    prelude.append('Define redirect_to %s\n' % redirect)
+if not keys_found['proxy_to']:
+    prelude.append('Define proxy_to    %s\n' % proxy_to)
+
+if prelude:
+    out = prelude + (['\n'] if out else []) + out
 
 with open(path, 'w') as f:
     f.writelines(out)
 __PY__
 
-                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload 2>&1
+                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload >/dev/null 2>&1
                 respond '{"success":true}'
                 ;;
 
@@ -467,7 +494,7 @@ __PY__
         APACHE_SCRIPT="/usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh"
         if [ ! -f "$APACHE_SCRIPT" ]; then
             respond '{"success":true,"warning":"cappysan-apache package is not installed."}'
-        elif ! "$APACHE_SCRIPT" reload 2>&1; then
+        elif ! "$APACHE_SCRIPT" reload >/dev/null 2>&1; then
             respond '{"success":true,"warning":"Failed to reload cappysan-apache."}'
         else
             respond '{"success":true}'

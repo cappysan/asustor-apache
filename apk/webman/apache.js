@@ -604,7 +604,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
     }
 });
 
-Ext.define('AS.ARC.apps.apache.main', {
+Ext.define('AS.ARC.apps.cappysanapache.main', {
     extend:     'AS.ARC._appBase',
     appTag:     'cappysan-apache',
     title:      'Apache',

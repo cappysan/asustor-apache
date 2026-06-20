@@ -24,7 +24,7 @@
       "css": [
         "apache.css"
       ],
-      "module": "AS.ARC.apps.apache.main",
+      "module": "AS.ARC.apps.cappysanapache.main",
       "langTag": "APACHE"
     },
     "privilege": {
