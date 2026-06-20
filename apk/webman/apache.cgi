@@ -2,9 +2,6 @@
 # Apache UI CGI
 # SPDX-License-Identifier: MIT
 
-LOG=/tmp/apache-ui.log
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] === invoked === method=$REQUEST_METHOD qs=$QUERY_STRING len=$CONTENT_LENGTH" >> "$LOG"
-
 BODY=""
 if [ "$REQUEST_METHOD" = "POST" ] && [ -n "$CONTENT_LENGTH" ] && [ "$CONTENT_LENGTH" -gt 0 ]; then
     BODY=$(dd bs=1 count="$CONTENT_LENGTH" 2>/dev/null)
@@ -35,8 +32,6 @@ get_param() {
 ACT=$(get_param act)
 TAB=$(get_param tab)
 
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] act=$ACT tab=$TAB" >> "$LOG"
-
 respond() {
     printf 'Content-Type: application/json\r\n\r\n'
     printf '%s' "$1"
@@ -44,6 +39,9 @@ respond() {
 
 CFG_DIR="/share/Configuration/apache"
 if [ -n "$APKG_CFG_DIR" ]; then CFG_DIR="$APKG_CFG_DIR"; fi
+
+APACHE_SELF_SITES_AVAILABLE="${CFG_DIR}/sites-available"
+APACHE_DEFAULT_CONF_TARGET="${APACHE_SELF_SITES_AVAILABLE}/_default_.conf"
 
 find_python() {
     for P in python3 python /usr/local/bin/python3 /usr/bin/python3 /usr/bin/python; do
@@ -96,11 +94,26 @@ def read_servername(path):
         pass
     return ''
 
+def read_custom_env(path, key):
+    try:
+        with open(path) as f:
+            for line in f:
+                s = line.strip()
+                if s.startswith('#') or '=' not in s:
+                    continue
+                k, v = s.split('=', 1)
+                if k.strip() == key:
+                    return v.strip()
+    except Exception:
+        pass
+    return ''
+
 print(json.dumps({
-    'success':     True,
-    'server_name': read_servername(os.path.join(cfg_dir, 'server-name.conf')),
-    'domain':      read_define(os.path.join(cfg_dir, 'domain.conf'), 'domain'),
-    'admin_email': read_define(os.path.join(cfg_dir, 'admin-email.conf'), 'admin_email'),
+    'success':           True,
+    'server_name':       read_servername(os.path.join(cfg_dir, 'server-name.conf')),
+    'domain':            read_define(os.path.join(cfg_dir, 'domain.conf'), 'domain'),
+    'admin_email':       read_define(os.path.join(cfg_dir, 'admin-email.conf'), 'admin_email'),
+    'web_url_override':  read_custom_env(os.path.join(cfg_dir, 'custom.env'), 'WEB_URL_OVERRIDE'),
 }))
 __PY__
 )
@@ -148,6 +161,38 @@ try:
 except Exception:
     pass
 print(json.dumps({'success': True, 'content': content}))
+__PY__
+)
+                printf 'Content-Type: application/json\r\n\r\n'
+                printf '%s' "$RESULT"
+                ;;
+
+            apache)
+                A_HOSTNAME="nas"
+                A_FQDN='${hostname}.${domain}'
+                A_REDIRECT='https://${server_fqdn}/'
+                A_PROXY_TO='https://127.0.0.1:8001/'
+                if [ -f "$APACHE_DEFAULT_CONF_TARGET" ]; then
+                    EXTRACTED_H=$(grep -m1 "^Define hostname " "$APACHE_DEFAULT_CONF_TARGET" 2>/dev/null | sed 's/^Define hostname[ ]*//')
+                    EXTRACTED_F=$(grep -m1 "^Define server_fqdn " "$APACHE_DEFAULT_CONF_TARGET" 2>/dev/null | sed 's/^Define server_fqdn[ ]*//')
+                    EXTRACTED_R=$(grep -m1 "^Define redirect_to " "$APACHE_DEFAULT_CONF_TARGET" 2>/dev/null | sed 's/^Define redirect_to[ ]*//')
+                    EXTRACTED_P=$(grep -m1 "^Define proxy_to " "$APACHE_DEFAULT_CONF_TARGET" 2>/dev/null | sed 's/^Define proxy_to[ ]*//')
+                    [ -n "$EXTRACTED_H" ] && A_HOSTNAME="$EXTRACTED_H"
+                    [ -n "$EXTRACTED_F" ] && A_FQDN="$EXTRACTED_F"
+                    [ -n "$EXTRACTED_R" ] && A_REDIRECT="$EXTRACTED_R"
+                    [ -n "$EXTRACTED_P" ] && A_PROXY_TO="$EXTRACTED_P"
+                fi
+
+                export _A_HOSTNAME="$A_HOSTNAME" _A_FQDN="$A_FQDN" _A_REDIRECT="$A_REDIRECT" _A_PROXY_TO="$A_PROXY_TO"
+                RESULT=$("$PYTHON" - << '__PY__'
+import json, os
+print(json.dumps({
+    'success': True,
+    'apache_hostname': os.environ.get('_A_HOSTNAME', 'nas'),
+    'apache_fqdn': os.environ.get('_A_FQDN', '${hostname}.${domain}'),
+    'apache_redirect_to': os.environ.get('_A_REDIRECT', 'https://${server_fqdn}/'),
+    'apache_proxy_to': os.environ.get('_A_PROXY_TO', 'https://127.0.0.1:8001/')
+}))
 __PY__
 )
                 printf 'Content-Type: application/json\r\n\r\n'
@@ -202,17 +247,20 @@ __PY__
                 SERVER_NAME=$(get_param server_name)
                 DOMAIN=$(get_param domain)
                 ADMIN_EMAIL=$(get_param admin_email)
+                URL_OVERRIDE=$(get_param web_url_override)
 
                 export _CFG_DIR="$CFG_DIR" _SERVER_NAME="$SERVER_NAME" \
-                       _DOMAIN="$DOMAIN" _ADMIN_EMAIL="$ADMIN_EMAIL"
+                       _DOMAIN="$DOMAIN" _ADMIN_EMAIL="$ADMIN_EMAIL" \
+                       _URL_OVERRIDE="$URL_OVERRIDE"
 
                 "$PYTHON" - << '__PY__'
 import os, re
 
-cfg_dir     = os.environ.get('_CFG_DIR',     '/share/Configuration/apache')
-server_name = os.environ.get('_SERVER_NAME', '').strip()
-domain      = os.environ.get('_DOMAIN',      '').strip()
-admin_email = os.environ.get('_ADMIN_EMAIL', '').strip()
+cfg_dir      = os.environ.get('_CFG_DIR',      '/share/Configuration/apache')
+server_name  = os.environ.get('_SERVER_NAME',  '').strip()
+domain       = os.environ.get('_DOMAIN',       '').strip()
+admin_email  = os.environ.get('_ADMIN_EMAIL',  '').strip()
+url_override = os.environ.get('_URL_OVERRIDE', '').strip()
 
 def rewrite_define(path, key, value):
     try:
@@ -254,15 +302,36 @@ def rewrite_servername(path, value):
     with open(path, 'w') as f:
         f.writelines(out)
 
+def rewrite_custom_env(path, key, value):
+    try:
+        with open(path) as f:
+            lines = f.readlines()
+    except Exception:
+        lines = []
+    found = False
+    out = []
+    for line in lines:
+        s = line.strip()
+        if not s.startswith('#') and '=' in s and s.split('=', 1)[0].strip() == key:
+            out.append('%s=%s\n' % (key, value))
+            found = True
+        else:
+            out.append(line)
+    if not found:
+        out.append('%s=%s\n' % (key, value))
+    with open(path, 'w') as f:
+        f.writelines(out)
+
 if server_name:
     rewrite_servername(os.path.join(cfg_dir, 'server-name.conf'), server_name)
 if domain:
     rewrite_define(os.path.join(cfg_dir, 'domain.conf'), 'domain', domain)
 if admin_email:
     rewrite_define(os.path.join(cfg_dir, 'admin-email.conf'), 'admin_email', admin_email)
+rewrite_custom_env(os.path.join(cfg_dir, 'custom.env'), 'WEB_URL_OVERRIDE', url_override)
 __PY__
 
-                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload >> "$LOG" 2>&1
+                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload 2>&1
                 respond '{"success":true}'
                 ;;
 
@@ -304,7 +373,7 @@ __PY__
                     rm -f "$CONF_ENABLED" 2>/dev/null
                 fi
 
-                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload >> "$LOG" 2>&1
+                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload 2>&1
                 respond '{"success":true}'
                 ;;
 
@@ -321,11 +390,63 @@ __PY__
                 PERSIST_SCRIPT="/usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh"
                 if [ ! -f "$PERSIST_SCRIPT" ]; then
                     respond '{"success":true,"warning":"cappysan-persistence package is not installed."}'
-                elif ! "$PERSIST_SCRIPT" restart >> "$LOG" 2>&1; then
+                elif ! "$PERSIST_SCRIPT" restart 2>&1; then
                     respond '{"success":true,"warning":"Failed to restart cappysan-persistence."}'
                 else
                     respond '{"success":true}'
                 fi
+                ;;
+
+            apache)
+                APACHE_HOSTNAME=$(get_param apache_hostname)
+                APACHE_FQDN=$(get_param apache_fqdn)
+                APACHE_REDIRECT=$(get_param apache_redirect_to)
+                APACHE_PROXY_TO=$(get_param apache_proxy_to)
+
+                [ -z "$APACHE_HOSTNAME" ] && APACHE_HOSTNAME="nas"
+                [ -z "$APACHE_FQDN" ] && APACHE_FQDN='${hostname}.${domain}'
+                [ -z "$APACHE_REDIRECT" ] && APACHE_REDIRECT='https://${server_fqdn}/'
+                [ -z "$APACHE_PROXY_TO" ] && APACHE_PROXY_TO='https://127.0.0.1:8001/'
+
+                mkdir -p "$APACHE_SELF_SITES_AVAILABLE" 2>/dev/null
+
+                export _A_HOSTNAME="$APACHE_HOSTNAME" _A_FQDN="$APACHE_FQDN" \
+                       _A_REDIRECT="$APACHE_REDIRECT" _A_PROXY_TO="$APACHE_PROXY_TO" \
+                       _CONF="$APACHE_DEFAULT_CONF_TARGET"
+                "$PYTHON" - << '__PY__'
+import os
+
+path = os.environ.get('_CONF', '')
+hostname = os.environ.get('_A_HOSTNAME', 'nas')
+fqdn = os.environ.get('_A_FQDN', '${hostname}.${domain}')
+redirect = os.environ.get('_A_REDIRECT', 'https://${server_fqdn}/')
+proxy_to = os.environ.get('_A_PROXY_TO', 'https://127.0.0.1:8001/')
+
+try:
+    with open(path) as f:
+        lines = f.readlines()
+except Exception:
+    lines = []
+
+out = []
+for line in lines:
+    if line.startswith('Define hostname '):
+        out.append('Define hostname    %s\n' % hostname)
+    elif line.startswith('Define server_fqdn '):
+        out.append('Define server_fqdn %s\n' % fqdn)
+    elif line.startswith('Define redirect_to '):
+        out.append('Define redirect_to %s\n' % redirect)
+    elif line.startswith('Define proxy_to '):
+        out.append('Define proxy_to %s\n' % proxy_to)
+    else:
+        out.append(line)
+
+with open(path, 'w') as f:
+    f.writelines(out)
+__PY__
+
+                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload 2>&1
+                respond '{"success":true}'
                 ;;
 
             *)
@@ -339,6 +460,17 @@ __PY__
             respond '{"success":true,"installed":true}'
         else
             respond '{"success":true,"installed":false}'
+        fi
+        ;;
+
+    reload)
+        APACHE_SCRIPT="/usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh"
+        if [ ! -f "$APACHE_SCRIPT" ]; then
+            respond '{"success":true,"warning":"cappysan-apache package is not installed."}'
+        elif ! "$APACHE_SCRIPT" reload 2>&1; then
+            respond '{"success":true,"warning":"Failed to reload cappysan-apache."}'
+        else
+            respond '{"success":true}'
         fi
         ;;
 

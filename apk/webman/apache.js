@@ -48,7 +48,8 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 fields: ['title', 'tabId'],
                 data: [
                     [_S('APACHE', 'TAB_SETTINGS'), 'settings'],
-                    [_S('APACHE', 'TAB_SITES'),    'sites']
+                    [_S('APACHE', 'TAB_SITES'),    'sites'],
+                    [_S('APACHE', 'TAB_DEFAULT'),  'apache']
                 ]
             }),
             hideHeaders: true,
@@ -59,7 +60,8 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 renderer: function (v, metadata, record) {
                     var icons = {
                         settings: AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-fn-settings.png'),
-                        sites:    AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-fn-sites.png')
+                        sites:    AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-fn-apache.png'),
+                        apache:   AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-fn-sites.png')
                     };
                     var iconUrl = icons[record.data.tabId] || icons.settings;
                     return '<div class="fn-block">' +
@@ -95,6 +97,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 cardPanel.removeAll();
                 if (tabId === 'settings') { fn.renderSettingsTab(cardPanel, json); }
                 if (tabId === 'sites')    { fn.renderSitesTab(cardPanel, json); Ext.defer(function () { fn.resizeSiteContent(); }, 150); }
+                if (tabId === 'apache')   { fn.renderApacheTab(cardPanel, json); }
             },
             failure: function (json) {
                 fn.win.el.unmask();
@@ -115,6 +118,38 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
             autoScroll: true,
             defaults:   { anchor: '100%' },
             items: [{
+                xtype:    'fieldset',
+                title:    _S('APACHE', 'SECTION_LINK'),
+                defaults: { anchor: '100%' },
+                items: [{
+                    xtype:  'fieldcontainer',
+                    layout: 'hbox',
+                    items: [{
+                        xtype:  'displayfield',
+                        itemId: 'apacheLink',
+                        value:  (function () {
+                            var url = json.web_url_override || ('https://' + (json.server_name || 'nas.example.com') + '/');
+                            return '<a href="' + url + '" target="_blank">' + _S('APACHE', 'LINK_OPEN') + '</a>';
+                        })(),
+                        margin: '0 10 0 0'
+                    }, {
+                        xtype:     'textfield',
+                        itemId:    'apacheLinkOverride',
+                        emptyText: _S('APACHE', 'LINK_OVERRIDE_HINT'),
+                        flex:      1,
+                        value:     json.web_url_override || '',
+                        listeners: {
+                            change: function (field, newVal) {
+                                var linkField = fn.win.down('#apacheLink');
+                                if (linkField) {
+                                    var url = newVal || ('https://' + (json.server_name || 'nas.example.com') + '/');
+                                    linkField.setValue('<a href="' + url + '" target="_blank">' + _S('APACHE', 'LINK_OPEN') + '</a>');
+                                }
+                            }
+                        }
+                    }]
+                }]
+            }, {
                 xtype:    'fieldset',
                 title:    _S('APACHE', 'SECTION_SERVER'),
                 defaults: { anchor: '100%', msgTarget: AS.ARC.config.msgTarget },
@@ -158,19 +193,21 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
     },
 
     saveSettingsTab: function () {
-        var fn         = this,
-            serverName = fn.win.down('#settingsServerName'),
-            domain     = fn.win.down('#settingsDomain'),
-            adminEmail = fn.win.down('#settingsAdminEmail');
+        var fn          = this,
+            serverName  = fn.win.down('#settingsServerName'),
+            domain      = fn.win.down('#settingsDomain'),
+            adminEmail  = fn.win.down('#settingsAdminEmail'),
+            urlOverride = fn.win.down('#apacheLinkOverride');
 
         fn.win.el.mask(_S('COMMON', 'APPLYING'));
         AS.ARC.ajax({
             url:    AS.ARC.util.getApiUrlWithSid(fn.apiUrl, { act: 'set', tab: 'settings' }),
             method: 'post',
             params: {
-                server_name: serverName ? serverName.getValue() : '',
-                domain:      domain     ? domain.getValue()     : '',
-                admin_email: adminEmail ? adminEmail.getValue() : ''
+                server_name:       serverName  ? serverName.getValue()  : '',
+                domain:            domain      ? domain.getValue()      : '',
+                admin_email:       adminEmail  ? adminEmail.getValue()  : '',
+                web_url_override:  urlOverride ? urlOverride.getValue() : ''
             },
             success: function () {
                 fn.win.el.unmask();
@@ -267,8 +304,40 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     cls:      'apache-conf-view',
                     value:    ''
                 }]
+            }],
+            dockedItems: [{
+                xtype: 'toolbar',
+                dock:  'bottom',
+                ui:    'footer',
+                items: [
+                    { xtype: 'component', flex: 1 },
+                    {
+                        xtype:   'button',
+                        text:    _S('COMMON', 'APPLY'),
+                        handler: function () { fn.reloadApache(); }
+                    }
+                ]
             }]
         }));
+    },
+
+    reloadApache: function () {
+        var fn = this;
+        fn.win.el.mask(_S('COMMON', 'APPLYING'));
+        AS.ARC.ajax({
+            url:    AS.ARC.util.getApiUrlWithSid(fn.apiUrl, { act: 'reload' }),
+            method: 'post',
+            success: function (json) {
+                fn.win.el.unmask();
+                if (json && json.warning) {
+                    AS.ARC.msgWindow.show({ parentWin: fn.win, title: _S('COMMON', 'WARNING'), width: 400, height: 160, iconType: 'warn', asItems: [{ xtype: 'displayfield', value: json.warning }], fbar: [{ text: _S('COMMON', 'OK'), handler: function () { this.up('window').close(); } }] });
+                }
+            },
+            failure: function (json) {
+                fn.win.el.unmask();
+                AS.ARC.util.showMsgWindow({ 5000: _S('COMMON', 'SESSION_TIMEOUT') }, json, fn.win);
+            }
+        });
     },
 
     loadSiteContent: function (name) {
@@ -395,6 +464,96 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
 
         Ext.Msg.alert('cappysan-persistence',
             'Could not open cappysan-persistence. Please open it from the desktop and go to the Hosts tab.');
+    },
+
+    /* ── Apache (self-registration) tab ───────────────────────────────── */
+    renderApacheTab: function (cardPanel, json) {
+        var fn = this;
+
+        cardPanel.add(Ext.create('Ext.panel.Panel', {
+            cls:        'as-page-panel app-cappysan-apache',
+            border:     false,
+            layout:     'anchor',
+            autoScroll: true,
+            defaults:   { anchor: '100%' },
+            items: [{
+                xtype:    'fieldset',
+                title:    _S('APACHE', 'SECTION_APACHE_SETTINGS'),
+                defaults: { anchor: '100%', msgTarget: AS.ARC.config.msgTarget },
+                items: [{
+                    xtype:      'textfield',
+                    fieldLabel: _S('APACHE', 'LABEL_APACHE_HOSTNAME'),
+                    itemId:     'apacheHostname',
+                    emptyText:  'nas',
+                    value:      json.apache_hostname || ''
+                }, {
+                    xtype:      'textfield',
+                    fieldLabel: _S('APACHE', 'LABEL_APACHE_FQDN'),
+                    itemId:     'apacheFqdn',
+                    emptyText:  '${hostname}.${domain}',
+                    value:      json.apache_fqdn || ''
+                }, {
+                    xtype: 'displayfield',
+                    value: _S('APACHE', 'LABEL_APACHE_PLACEHOLDERS')
+                }, {
+                    xtype:      'textfield',
+                    fieldLabel: _S('APACHE', 'LABEL_APACHE_REDIRECT'),
+                    itemId:     'apacheRedirect',
+                    emptyText:  'https://${server_fqdn}/',
+                    value:      json.apache_redirect_to || ''
+                }, {
+                    xtype:      'textfield',
+                    fieldLabel: _S('APACHE', 'LABEL_APACHE_PROXY_TO'),
+                    itemId:     'apacheProxyTo',
+                    emptyText:  'https://127.0.0.1:8001/',
+                    value:      json.apache_proxy_to || ''
+                }]
+            }],
+            dockedItems: [{
+                xtype: 'toolbar',
+                dock:  'bottom',
+                ui:    'footer',
+                items: [
+                    { xtype: 'component', flex: 1 },
+                    {
+                        xtype:   'button',
+                        text:    _S('COMMON', 'APPLY'),
+                        handler: function () { fn.saveApacheTab(); }
+                    }
+                ]
+            }]
+        }));
+    },
+
+    saveApacheTab: function () {
+        var fn       = this,
+            hostname = fn.win.down('#apacheHostname'),
+            fqdn     = fn.win.down('#apacheFqdn'),
+            redirect = fn.win.down('#apacheRedirect'),
+            proxyTo  = fn.win.down('#apacheProxyTo');
+
+        fn.win.el.mask(_S('COMMON', 'APPLYING'));
+        AS.ARC.ajax({
+            url:    AS.ARC.util.getApiUrlWithSid(fn.apiUrl, { act: 'set', tab: 'apache' }),
+            method: 'post',
+            params: {
+                apache_hostname:    hostname ? hostname.getValue() : 'nas',
+                apache_fqdn:        fqdn     ? fqdn.getValue()     : '${hostname}.${domain}',
+                apache_redirect_to: redirect ? redirect.getValue() : 'https://${server_fqdn}/',
+                apache_proxy_to:    proxyTo  ? proxyTo.getValue()  : 'https://127.0.0.1:8001/'
+            },
+            success: function (json) {
+                fn.win.el.unmask();
+                if (json && json.warning) {
+                    AS.ARC.msgWindow.show({ parentWin: fn.win, title: _S('COMMON', 'WARNING'), width: 400, height: 160, iconType: 'warn', asItems: [{ xtype: 'displayfield', value: json.warning }], fbar: [{ text: _S('COMMON', 'OK'), handler: function () { this.up('window').close(); } }] });
+                }
+                fn.switchTab('apache');
+            },
+            failure: function (json) {
+                fn.win.el.unmask();
+                AS.ARC.util.showMsgWindow({ 5000: _S('COMMON', 'SESSION_TIMEOUT') }, json, fn.win);
+            }
+        });
     },
 
     /* ── Resize ─────────────────────────────────────────────────────────── */

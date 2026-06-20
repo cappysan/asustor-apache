@@ -27,7 +27,6 @@ repos:
         args: ["--unique"]
         files: "support/codespell.exclude"
       - id: fix-byte-order-marker
-      - id: forbid-submodules
       - id: mixed-line-ending
         name: "fix mixed line ending"
         args: ["--fix=lf"]
