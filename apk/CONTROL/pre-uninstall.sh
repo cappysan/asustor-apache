@@ -10,9 +10,6 @@ fi
 # Clean
 # =====
 if test "x${APKG_PKG_STATUS}" != "xupgrade"; then
-  # Remove the certbot
-  rm -f /share/Configuration/certbot/letsencrypt/renewal-hooks/deploy/10-apache
-
   # Remove logrotate
   rm -f /etc/logrotate.d/cappysan-apache
 fi
