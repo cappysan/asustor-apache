@@ -331,7 +331,6 @@ if admin_email:
 rewrite_custom_env(os.path.join(cfg_dir, 'custom.env'), 'WEB_URL_OVERRIDE', url_override)
 __PY__
 
-                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload >/dev/null 2>&1
                 respond '{"success":true}'
                 ;;
 
@@ -472,7 +471,6 @@ with open(path, 'w') as f:
     f.writelines(out)
 __PY__
 
-                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload >/dev/null 2>&1
                 respond '{"success":true}'
                 ;;
 
@@ -496,6 +494,17 @@ __PY__
             respond '{"success":true,"warning":"cappysan-apache package is not installed."}'
         elif ! "$APACHE_SCRIPT" reload >/dev/null 2>&1; then
             respond '{"success":true,"warning":"Failed to reload cappysan-apache."}'
+        else
+            respond '{"success":true}'
+        fi
+        ;;
+
+    restart)
+        APACHE_SCRIPT="/usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh"
+        if [ ! -f "$APACHE_SCRIPT" ]; then
+            respond '{"success":true,"warning":"cappysan-apache package is not installed."}'
+        elif ! "$APACHE_SCRIPT" restart >/dev/null 2>&1; then
+            respond '{"success":true,"warning":"Failed to restart cappysan-apache."}'
         else
             respond '{"success":true}'
         fi

@@ -184,6 +184,16 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     { xtype: 'component', flex: 1 },
                     {
                         xtype:   'button',
+                        text:    _S('APACHE', 'BTN_RESTART'),
+                        handler: function () { fn.restartApache(); }
+                    },
+                    {
+                        xtype:   'button',
+                        text:    _S('APACHE', 'BTN_RELOAD'),
+                        handler: function () { fn.reloadApache(); }
+                    },
+                    {
+                        xtype:   'button',
                         text:    _S('COMMON', 'APPLY'),
                         handler: function () { fn.saveSettingsTab(); }
                     }
@@ -313,6 +323,16 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     { xtype: 'component', flex: 1 },
                     {
                         xtype:   'button',
+                        text:    _S('APACHE', 'BTN_RESTART'),
+                        handler: function () { fn.restartApache(); }
+                    },
+                    {
+                        xtype:   'button',
+                        text:    _S('APACHE', 'BTN_RELOAD'),
+                        handler: function () { fn.reloadApache(); }
+                    },
+                    {
+                        xtype:   'button',
                         text:    _S('COMMON', 'APPLY'),
                         handler: function () { fn.reloadApache(); }
                     }
@@ -326,6 +346,25 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
         fn.win.el.mask(_S('COMMON', 'APPLYING'));
         AS.ARC.ajax({
             url:    AS.ARC.util.getApiUrlWithSid(fn.apiUrl, { act: 'reload' }),
+            method: 'post',
+            success: function (json) {
+                fn.win.el.unmask();
+                if (json && json.warning) {
+                    AS.ARC.msgWindow.show({ parentWin: fn.win, title: _S('COMMON', 'WARNING'), width: 400, height: 160, iconType: 'warn', asItems: [{ xtype: 'displayfield', value: json.warning }], fbar: [{ text: _S('COMMON', 'OK'), handler: function () { this.up('window').close(); } }] });
+                }
+            },
+            failure: function (json) {
+                fn.win.el.unmask();
+                AS.ARC.util.showMsgWindow({ 5000: _S('COMMON', 'SESSION_TIMEOUT') }, json, fn.win);
+            }
+        });
+    },
+
+    restartApache: function () {
+        var fn = this;
+        fn.win.el.mask(_S('COMMON', 'APPLYING'));
+        AS.ARC.ajax({
+            url:    AS.ARC.util.getApiUrlWithSid(fn.apiUrl, { act: 'restart' }),
             method: 'post',
             success: function (json) {
                 fn.win.el.unmask();
@@ -515,6 +554,16 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 ui:    'footer',
                 items: [
                     { xtype: 'component', flex: 1 },
+                    {
+                        xtype:   'button',
+                        text:    _S('APACHE', 'BTN_RESTART'),
+                        handler: function () { fn.restartApache(); }
+                    },
+                    {
+                        xtype:   'button',
+                        text:    _S('APACHE', 'BTN_RELOAD'),
+                        handler: function () { fn.reloadApache(); }
+                    },
                     {
                         xtype:   'button',
                         text:    _S('COMMON', 'APPLY'),
