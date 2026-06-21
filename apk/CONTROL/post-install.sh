@@ -22,11 +22,6 @@ fi
 chown -R root:root ${APKG_PKG_DIR}
 
 
-# User
-# ====
-useradd --system --no-create-home --home-dir ${APKG_CFG_DIR}/ --gid nogroup --shell /bin/false ${APKG_USER}
-
-
 # Configuration folder
 # ====================
 mkdir -p ${APKG_CFG_DIR}
@@ -37,6 +32,7 @@ chmod 750 ${APKG_CFG_DIR}
 # Configuration
 # =============
 # Don't override files that could have been user modified.
+#
 rsync -a --inplace --ignore-existing ${APKG_PKG_DIR}/conf.dist/ ${APKG_CFG_DIR}
 chown -R ${APKG_USER}:${APKG_GROUP} ${APKG_CFG_DIR}
 

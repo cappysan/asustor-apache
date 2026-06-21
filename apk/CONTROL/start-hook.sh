@@ -34,11 +34,7 @@ for as_dir in /share/Configuration/*/deps.d/apache/sites-available/; do
     rsync -a --inplace ${as_dir}/ ${APKG_CFG_DIR}/sites-available/
   fi
 done
-for as_dir in /share/Configuration/*/deps.d/apache/sites-enabled/; do
-  if test -d "${as_dir}"; then
-    rsync -a --inplace ${as_dir}/ ${APKG_CFG_DIR}/sites-enabled/
-  fi
-done
+
 
 # Symlinks
 # ========
