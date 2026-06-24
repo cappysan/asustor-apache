@@ -31,9 +31,6 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 afterrender: function (win) {
                     win.header.items.items[1].hide();
                     fn.navGrid.getSelectionModel().select(0);
-                },
-                resize: function () {
-                    fn.resizeSiteContent();
                 }
             }
         });
@@ -96,7 +93,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 fn.win.el.unmask();
                 cardPanel.removeAll();
                 if (tabId === 'settings') { fn.renderSettingsTab(cardPanel, json); }
-                if (tabId === 'sites')    { fn.renderSitesTab(cardPanel, json); Ext.defer(function () { fn.resizeSiteContent(); }, 150); }
+                if (tabId === 'sites')    { fn.renderSitesTab(cardPanel, json); }
                 if (tabId === 'apache')   { fn.renderApacheTab(cardPanel, json); }
             },
             failure: function (json) {
@@ -236,24 +233,29 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
             sites = json.sites || [];
 
         var store = Ext.create('Ext.data.Store', {
+            pageSize: 5,
             fields: ['name', 'enabled'],
             data:   sites
         });
 
         var grid = Ext.create('Ext.grid.Panel', {
-            itemId:  'sitesGrid',
-            store:   store,
-            border:  false,
-            anchor:  '100%',
-            height:  200,
+            itemId:          'sitesGrid',
+            store:           store,
+            border:          false,
+            sortableColumns: false,
+            anchor:          '100%',
+            height:          200,
+            style: { border: '#BBB 1px solid' },
             columns: [{
-                text:      _S('APACHE', 'COL_SITE_NAME'),
-                dataIndex: 'name',
-                flex:      2
+                header:       _S('APACHE', 'COL_SITE_NAME'),
+                dataIndex:    'name',
+                menuDisabled: true,
+                flex:         2
             }, {
-                text:      _S('APACHE', 'COL_SITE_STATUS'),
-                dataIndex: 'enabled',
-                flex:      1,
+                header:       _S('APACHE', 'COL_SITE_STATUS'),
+                dataIndex:    'enabled',
+                menuDisabled: true,
+                flex:         1,
                 renderer:  function (v) {
                     return v
                         ? '<span style="color:#2a7a2a;">' + _S('APACHE', 'STATUS_ENABLED')  + '</span>'
@@ -269,19 +271,22 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     fn.win.down('#disableBtn').setDisabled(!has || !enabled || isDefault);
                     if (has) { fn.loadSiteContent(sel[0].get('name')); }
                 }
-            }
+            },
+            bbar: Ext.create('AS.ARC.pagingToolbar', { store: store })
         });
 
         cardPanel.add(Ext.create('Ext.panel.Panel', {
-            cls:        'as-page-panel app-cappysan-apache',
-            border:     false,
-            layout:     'anchor',
-            autoScroll: true,
-            defaults:   { anchor: '100%' },
+            cls:    'as-page-panel app-cappysan-apache',
+            border: false,
+            layout: {
+                type:  'vbox',
+                align: 'stretch'
+            },
             items: [{
                 xtype:    'fieldset',
                 title:    _S('APACHE', 'SECTION_SITES'),
                 defaults: { anchor: '100%' },
+                flex:     0,
                 items: [{
                     xtype:  'box',
                     autoEl: { tag: 'div' },
@@ -302,14 +307,13 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     }]
                 }, grid]
             }, {
-                xtype:    'fieldset',
-                title:    _S('APACHE', 'SECTION_SITE_CONTENT'),
-                defaults: { anchor: '100%' },
+                xtype:  'fieldset',
+                title:  _S('APACHE', 'SECTION_SITE_CONTENT'),
+                flex:   1,
+                layout: 'fit',
                 items: [{
                     xtype:    'textarea',
                     itemId:   'siteContent',
-                    anchor:   '100%',
-                    height:   140,
                     readOnly: true,
                     cls:      'apache-conf-view',
                     value:    ''
@@ -603,27 +607,6 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 AS.ARC.util.showMsgWindow({ 5000: _S('COMMON', 'SESSION_TIMEOUT') }, json, fn.win);
             }
         });
-    },
-
-    /* ── Resize ─────────────────────────────────────────────────────────── */
-    resizeSiteContent: function () {
-        var fn       = this,
-            win      = fn.win,
-            textarea = win.down('#siteContent');
-
-        if (!textarea || !textarea.el) { return; }
-
-        var winHeight    = win.getHeight(),
-            taEl         = textarea.el,
-            taTop        = taEl.getTop(),
-            winTop       = win.el.getTop(),
-            footerHeight = 0,
-            padding      = 16,
-            newHeight    = winHeight - (taTop - winTop) - footerHeight - padding;
-
-        if (newHeight > 60) {
-            textarea.setHeight(newHeight);
-        }
     },
 
     /* ── Layout ─────────────────────────────────────────────────────────── */
