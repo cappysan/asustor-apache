@@ -233,7 +233,6 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
             sites = json.sites || [];
 
         var store = Ext.create('Ext.data.Store', {
-            pageSize: 5,
             fields: ['name', 'enabled'],
             data:   sites
         });
@@ -244,6 +243,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
             border:          false,
             sortableColumns: false,
             height:          271,
+            scroll:          'vertical',
             style: {
                 border: '#BBB 1px solid'
             },
@@ -273,7 +273,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     if (has) { fn.loadSiteContent(sel[0].get('name')); }
                 }
             },
-            bbar: Ext.create('AS.ARC.pagingToolbar', { store: store })
+            bbar: undefined
         });
 
         cardPanel.add(Ext.create('Ext.panel.Panel', {

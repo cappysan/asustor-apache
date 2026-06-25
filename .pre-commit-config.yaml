@@ -46,10 +46,3 @@ repos:
       name: "run codespell"
       additional_dependencies:
         - tomli
-
-
-  - repo: "https://github.com/andreoliwa/nitpick"
-    rev: v0.38.1
-    hooks:
-      - id: nitpick-check
-        name: "run nitpick check"
