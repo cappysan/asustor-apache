@@ -19,10 +19,10 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
             id:        fn.id,
             itemId:    fn.id,
             title:     '<div class="as-header" style="background-image:url(' + AS.ARC.util.fixDc('/apps/cappysan-apache/images/icon-app-task.png') + ');background-position:50%;background-repeat:no-repeat;"></div><div class="as-header-text">Apache</div>',
-            width:     700,
-            height:    500,
-            minWidth:  700,
-            minHeight: 500,
+            width:     720,
+            height:    650,
+            minWidth:  720,
+            minHeight: 650,
             resizable: true,
             border:    false,
             layout:    'fit',
@@ -63,7 +63,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     var iconUrl = icons[record.data.tabId] || icons.settings;
                     return '<div class="fn-block">' +
                            '<div class="fn-icon" style="background-image:url(' + iconUrl + ');background-repeat:no-repeat;background-position:center center;background-size:contain;"></div>' +
-                           '<div class="fn-title" style="width:130px;opacity:1;">' + record.data.title + '</div>' +
+                           '<div class="fn-title" style="width:150px;opacity:1;">' + record.data.title + '</div>' +
                            '<div class="x-clear"></div>' +
                            '</div>';
                 }
@@ -243,9 +243,10 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
             store:           store,
             border:          false,
             sortableColumns: false,
-            anchor:          '100%',
-            height:          200,
-            style: { border: '#BBB 1px solid' },
+            height:          271,
+            style: {
+                border: '#BBB 1px solid'
+            },
             columns: [{
                 header:       _S('APACHE', 'COL_SITE_NAME'),
                 dataIndex:    'name',
@@ -622,7 +623,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 itemId: 'westPanel',
                 cls:    'as-selector-panel',
                 border: false,
-                width:  150,
+                width:  190,
                 layout: 'fit',
                 items:  [fn.getNavGrid()]
             }, {
