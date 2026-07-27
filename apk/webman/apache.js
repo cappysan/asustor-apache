@@ -544,7 +544,7 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     xtype:      'textfield',
                     fieldLabel: _S('APACHE', 'LABEL_APACHE_HOSTNAME'),
                     itemId:     'apacheHostname',
-                    emptyText:  'nas',
+                    emptyText:  '',
                     value:      json.apache_hostname || ''
                 }, {
                     xtype:      'textfield',
