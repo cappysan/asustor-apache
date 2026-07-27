@@ -119,32 +119,24 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 title:    _S('APACHE', 'SECTION_LINK'),
                 defaults: { anchor: '100%' },
                 items: [{
-                    xtype:  'fieldcontainer',
-                    layout: 'hbox',
-                    items: [{
-                        xtype:  'displayfield',
-                        itemId: 'apacheLink',
-                        value:  (function () {
-                            var url = json.web_url_override || ('https://' + (json.server_name || 'nas.example.com') + '/');
-                            return '<a href="' + url + '" target="_blank">' + _S('APACHE', 'LINK_OPEN') + '</a>';
-                        })(),
-                        margin: '0 10 0 0'
-                    }, {
-                        xtype:     'textfield',
-                        itemId:    'apacheLinkOverride',
-                        emptyText: _S('APACHE', 'LINK_OVERRIDE_HINT'),
-                        flex:      1,
-                        value:     json.web_url_override || '',
-                        listeners: {
-                            change: function (field, newVal) {
-                                var linkField = fn.win.down('#apacheLink');
-                                if (linkField) {
-                                    var url = newVal || ('https://' + (json.server_name || 'nas.example.com') + '/');
-                                    linkField.setValue('<a href="' + url + '" target="_blank">' + _S('APACHE', 'LINK_OPEN') + '</a>');
-                                }
-                            }
-                        }
-                    }]
+                    xtype:      'textfield',
+                    itemId:     'apacheLinkOverride',
+                    fieldLabel: AS.ARC.util.fontToBold(_S('APACHE', 'LINK_OVERRIDE_LABEL')),
+                    labelWidth: labelWidth,
+                    value:      json.web_url_override || '',
+                    listeners: {
+                        change: function () { fn.updateApacheLink(); }
+                    }
+                }, {
+                    xtype:  'displayfield',
+                    itemId: 'apacheLink',
+                    value:  (function () {
+                        var url = json.web_url_override || ('https://' + (json.server_name || 'nas.example.com') + '/');
+                        return '<a href="' + url + '" target="_blank">' + _S('APACHE', 'LINK_OPEN') + '</a>';
+                    })()
+                }, {
+                    xtype: 'displayfield',
+                    value: _S('APACHE', 'LINK_OVERRIDE_DESC')
                 }]
             }, {
                 xtype:    'fieldset',
@@ -156,21 +148,30 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                     labelWidth: labelWidth,
                     itemId:     'settingsServerName',
                     emptyText:  'nas.example.com',
-                    value:      json.server_name || ''
+                    value:      json.server_name || '',
+                    listeners: {
+                        change: function () { fn.updateApacheLink(); }
+                    }
                 }, {
                     xtype:      'textfield',
                     fieldLabel: AS.ARC.util.fontToBold(_S('APACHE', 'LABEL_DOMAIN')),
                     labelWidth: labelWidth,
                     itemId:     'settingsDomain',
                     emptyText:  'example.com',
-                    value:      json.domain || ''
+                    value:      json.domain || '',
+                    listeners: {
+                        change: function () { fn.updateApacheLink(); }
+                    }
                 }, {
                     xtype:      'textfield',
                     fieldLabel: AS.ARC.util.fontToBold(_S('APACHE', 'LABEL_ADMIN_EMAIL')),
                     labelWidth: labelWidth,
                     itemId:     'settingsAdminEmail',
                     emptyText:  'admin@example.com',
-                    value:      json.admin_email || ''
+                    value:      json.admin_email || '',
+                    listeners: {
+                        change: function () { fn.updateApacheLink(); }
+                    }
                 }]
             }],
             dockedItems: [{
@@ -197,6 +198,21 @@ Ext.define('AS.ARC.apps.cappysanapache.core', {
                 ]
             }]
         }));
+    },
+
+    updateApacheLink: function () {
+        var fn          = this,
+            linkField   = fn.win.down('#apacheLink'),
+            urlOverride = fn.win.down('#apacheLinkOverride'),
+            serverName  = fn.win.down('#settingsServerName');
+
+        if (!linkField) { return; }
+
+        var override = urlOverride ? urlOverride.getValue() : '',
+            server    = serverName  ? serverName.getValue()  : '',
+            url       = override || ('https://' + (server || 'nas.example.com') + '/');
+
+        linkField.setValue('<a href="' + url + '" target="_blank">' + _S('APACHE', 'LINK_OPEN') + '</a>');
     },
 
     saveSettingsTab: function () {

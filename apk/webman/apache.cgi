@@ -1,70 +1,65 @@
-#!/bin/sh
+#!/usr/local/bin/python3
 # Apache UI CGI
 # SPDX-License-Identifier: MIT
 
-BODY=""
-if [ "$REQUEST_METHOD" = "POST" ] && [ -n "$CONTENT_LENGTH" ] && [ "$CONTENT_LENGTH" -gt 0 ]; then
-    BODY=$(dd bs=1 count="$CONTENT_LENGTH" 2>/dev/null)
-fi
+import json
+import os
+import re
+import subprocess
+import sys
+from urllib.parse import parse_qs
 
-ALL_PARAMS="${QUERY_STRING}&${BODY}"
+REQUEST_METHOD = os.environ.get('REQUEST_METHOD', '')
+QUERY_STRING   = os.environ.get('QUERY_STRING', '')
+CONTENT_LENGTH = os.environ.get('CONTENT_LENGTH', '')
+APKG_CFG_DIR   = os.environ.get('APKG_CFG_DIR', '')
 
-urldecode() {
-    echo "$1" | awk 'BEGIN{
-        for (i=0; i<256; i++) chr[sprintf("%02X", i)] = sprintf("%c", i)
-    }
-    {
-        gsub(/\+/, " ")
-        out = ""
-        while (match($0, /%[0-9A-Fa-f][0-9A-Fa-f]/)) {
-            out = out substr($0, 1, RSTART-1) chr[toupper(substr($0, RSTART+1, 2))]
-            $0 = substr($0, RSTART+RLENGTH)
-        }
-        print out $0
-    }'
-}
+CFG_DIR             = APKG_CFG_DIR or '/share/Configuration/apache'
+SITES_AVAILABLE     = os.path.join(CFG_DIR, 'sites-available')
+SITES_ENABLED       = os.path.join(CFG_DIR, 'sites-enabled')
+DEFAULT_CONF_TARGET = os.path.join(SITES_AVAILABLE, '_default_.conf')
+HOSTS_FILE          = os.path.join(CFG_DIR, 'deps.d', 'persistence', 'hosts')
 
-get_param() {
-    raw=$(echo "$ALL_PARAMS" | tr '&' '\n' | grep "^${1}=" | head -1 | cut -d= -f2-)
-    urldecode "$raw"
-}
+APACHE_CONTROL      = '/usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh'
+PERSISTENCE_CONTROL = '/usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh'
+PERSISTENCE_CONFIG  = '/usr/local/AppCentral/cappysan-persistence/CONTROL/config.json'
 
-ACT=$(get_param act)
-TAB=$(get_param tab)
 
-respond() {
-    printf 'Content-Type: application/json\r\n\r\n'
-    printf '%s' "$1"
-}
+def get_params():
+    body = ''
+    if REQUEST_METHOD == 'POST' and CONTENT_LENGTH:
+        try:
+            length = int(CONTENT_LENGTH)
+        except ValueError:
+            length = 0
+        if length > 0:
+            body = sys.stdin.read(length)
 
-CFG_DIR="/share/Configuration/apache"
-if [ -n "$APKG_CFG_DIR" ]; then CFG_DIR="$APKG_CFG_DIR"; fi
+    params = {}
+    for source in (QUERY_STRING, body):
+        if not source:
+            continue
+        for key, values in parse_qs(source, keep_blank_values=True).items():
+            if values:
+                params[key] = values[0]
+    return params
 
-APACHE_SELF_SITES_AVAILABLE="${CFG_DIR}/sites-available"
-APACHE_DEFAULT_CONF_TARGET="${APACHE_SELF_SITES_AVAILABLE}/_default_.conf"
 
-find_python() {
-    for P in python3 python /usr/local/bin/python3 /usr/bin/python3 /usr/bin/python; do
-        if command -v "$P" >/dev/null 2>&1; then echo "$P"; return; fi
-    done
-}
+def param(params, key, default=''):
+    return params.get(key, default)
 
-case "$ACT" in
 
-    get)
-        PYTHON=$(find_python)
-        if [ -z "$PYTHON" ]; then
-            respond '{"success":false,"error_code":500,"error_msg":"No python interpreter found"}'
-            exit 0
-        fi
+def respond(data):
+    print('Content-Type: application/json\r\n\r\n' + json.dumps(data), end='', flush=True)
 
-        case "$TAB" in
-            settings)
-                export _CFG_DIR="$CFG_DIR"
-                RESULT=$("$PYTHON" - << '__PY__'
-import json, os, re
 
-cfg_dir = os.environ.get('_CFG_DIR', '/share/Configuration/apache')
+def read_file(path, default=''):
+    try:
+        with open(path) as f:
+            return f.read()
+    except Exception:
+        return default
+
 
 def read_define(path, key):
     try:
@@ -80,6 +75,7 @@ def read_define(path, key):
         pass
     return ''
 
+
 def read_servername(path):
     try:
         with open(path) as f:
@@ -93,6 +89,7 @@ def read_servername(path):
     except Exception:
         pass
     return ''
+
 
 def read_custom_env(path, key):
     try:
@@ -108,159 +105,6 @@ def read_custom_env(path, key):
         pass
     return ''
 
-print(json.dumps({
-    'success':           True,
-    'server_name':       read_servername(os.path.join(cfg_dir, 'server-name.conf')),
-    'domain':            read_define(os.path.join(cfg_dir, 'domain.conf'), 'domain'),
-    'admin_email':       read_define(os.path.join(cfg_dir, 'admin-email.conf'), 'admin_email'),
-    'web_url_override':  read_custom_env(os.path.join(cfg_dir, 'custom.env'), 'WEB_URL_OVERRIDE'),
-}))
-__PY__
-)
-                printf 'Content-Type: application/json\r\n\r\n'
-                printf '%s' "$RESULT"
-                ;;
-
-            sites)
-                SITES_AVAILABLE="${CFG_DIR}/sites-available"
-                SITES_ENABLED="${CFG_DIR}/sites-enabled"
-                export _SITES_AVAILABLE="$SITES_AVAILABLE" _SITES_ENABLED="$SITES_ENABLED"
-                RESULT=$("$PYTHON" - << '__PY__'
-import json, os
-
-available   = os.environ.get('_SITES_AVAILABLE', '')
-enabled_dir = os.environ.get('_SITES_ENABLED', '')
-
-sites = []
-try:
-    for name in sorted(os.listdir(available)):
-        if not name.endswith('.conf'):
-            continue
-        enabled = os.path.exists(os.path.join(enabled_dir, name))
-        sites.append({'name': name, 'enabled': enabled})
-except Exception:
-    pass
-
-print(json.dumps({'success': True, 'sites': sites}))
-__PY__
-)
-                printf 'Content-Type: application/json\r\n\r\n'
-                printf '%s' "$RESULT"
-                ;;
-
-            hosts)
-                HOSTS_FILE="${CFG_DIR}/deps.d/persistence/hosts"
-                export _HOSTS_FILE="$HOSTS_FILE"
-                RESULT=$("$PYTHON" - << '__PY__'
-import json, os
-path = os.environ.get('_HOSTS_FILE', '')
-content = ''
-try:
-    with open(path) as f:
-        content = f.read()
-except Exception:
-    pass
-print(json.dumps({'success': True, 'content': content}))
-__PY__
-)
-                printf 'Content-Type: application/json\r\n\r\n'
-                printf '%s' "$RESULT"
-                ;;
-
-            apache)
-                A_HOSTNAME="nas"
-                A_FQDN='${hostname}.${domain}'
-                A_REDIRECT='https://${server_fqdn}/'
-                A_PROXY_TO='https://127.0.0.1:8001/'
-                if [ -f "$APACHE_DEFAULT_CONF_TARGET" ]; then
-                    EXTRACTED_H=$(grep -m1 "^Define hostname " "$APACHE_DEFAULT_CONF_TARGET" 2>/dev/null | sed 's/^Define hostname[ ]*//')
-                    EXTRACTED_F=$(grep -m1 "^Define server_fqdn " "$APACHE_DEFAULT_CONF_TARGET" 2>/dev/null | sed 's/^Define server_fqdn[ ]*//')
-                    EXTRACTED_R=$(grep -m1 "^Define redirect_to " "$APACHE_DEFAULT_CONF_TARGET" 2>/dev/null | sed 's/^Define redirect_to[ ]*//')
-                    EXTRACTED_P=$(grep -m1 "^Define proxy_to " "$APACHE_DEFAULT_CONF_TARGET" 2>/dev/null | sed 's/^Define proxy_to[ ]*//')
-                    [ -n "$EXTRACTED_H" ] && A_HOSTNAME="$EXTRACTED_H"
-                    [ -n "$EXTRACTED_F" ] && A_FQDN="$EXTRACTED_F"
-                    [ -n "$EXTRACTED_R" ] && A_REDIRECT="$EXTRACTED_R"
-                    [ -n "$EXTRACTED_P" ] && A_PROXY_TO="$EXTRACTED_P"
-                fi
-
-                export _A_HOSTNAME="$A_HOSTNAME" _A_FQDN="$A_FQDN" _A_REDIRECT="$A_REDIRECT" _A_PROXY_TO="$A_PROXY_TO"
-                RESULT=$("$PYTHON" - << '__PY__'
-import json, os
-print(json.dumps({
-    'success': True,
-    'apache_hostname': os.environ.get('_A_HOSTNAME', 'nas'),
-    'apache_fqdn': os.environ.get('_A_FQDN', '${hostname}.${domain}'),
-    'apache_redirect_to': os.environ.get('_A_REDIRECT', 'https://${server_fqdn}/'),
-    'apache_proxy_to': os.environ.get('_A_PROXY_TO', 'https://127.0.0.1:8001/')
-}))
-__PY__
-)
-                printf 'Content-Type: application/json\r\n\r\n'
-                printf '%s' "$RESULT"
-                ;;
-
-            *)
-                respond '{"success":true}'
-                ;;
-        esac
-        ;;
-
-    get_content)
-        SITE_NAME=$(get_param name)
-        PYTHON=$(find_python)
-        if [ -z "$PYTHON" ]; then
-            respond '{"success":false,"error_code":500,"error_msg":"No python interpreter found"}'
-            exit 0
-        fi
-        SITES_AVAILABLE="${CFG_DIR}/sites-available"
-        export _SITE_PATH="${SITES_AVAILABLE}/${SITE_NAME}" _SITE_NAME="$SITE_NAME"
-        RESULT=$("$PYTHON" - << '__PY__'
-import json, os
-
-path = os.environ.get('_SITE_PATH', '')
-name = os.environ.get('_SITE_NAME', '')
-
-if '/' in name or '..' in name or not name.endswith('.conf'):
-    print(json.dumps({'success': False, 'content': ''}))
-else:
-    try:
-        with open(path) as f:
-            content = f.read()
-    except Exception:
-        content = ''
-    print(json.dumps({'success': True, 'content': content}))
-__PY__
-)
-        printf 'Content-Type: application/json\r\n\r\n'
-        printf '%s' "$RESULT"
-        ;;
-
-    set)
-        PYTHON=$(find_python)
-        if [ -z "$PYTHON" ]; then
-            respond '{"success":false,"error_code":500,"error_msg":"No python interpreter found"}'
-            exit 0
-        fi
-
-        case "$TAB" in
-            settings)
-                SERVER_NAME=$(get_param server_name)
-                DOMAIN=$(get_param domain)
-                ADMIN_EMAIL=$(get_param admin_email)
-                URL_OVERRIDE=$(get_param web_url_override)
-
-                export _CFG_DIR="$CFG_DIR" _SERVER_NAME="$SERVER_NAME" \
-                       _DOMAIN="$DOMAIN" _ADMIN_EMAIL="$ADMIN_EMAIL" \
-                       _URL_OVERRIDE="$URL_OVERRIDE"
-
-                "$PYTHON" - << '__PY__'
-import os, re
-
-cfg_dir      = os.environ.get('_CFG_DIR',      '/share/Configuration/apache')
-server_name  = os.environ.get('_SERVER_NAME',  '').strip()
-domain       = os.environ.get('_DOMAIN',       '').strip()
-admin_email  = os.environ.get('_ADMIN_EMAIL',  '').strip()
-url_override = os.environ.get('_URL_OVERRIDE', '').strip()
 
 def rewrite_define(path, key, value):
     try:
@@ -282,6 +126,7 @@ def rewrite_define(path, key, value):
     with open(path, 'w') as f:
         f.writelines(out)
 
+
 def rewrite_servername(path, value):
     try:
         with open(path) as f:
@@ -301,6 +146,7 @@ def rewrite_servername(path, value):
         out.append('ServerName %s\n' % value)
     with open(path, 'w') as f:
         f.writelines(out)
+
 
 def rewrite_custom_env(path, key, value):
     try:
@@ -322,196 +168,251 @@ def rewrite_custom_env(path, key, value):
     with open(path, 'w') as f:
         f.writelines(out)
 
-if server_name:
-    rewrite_servername(os.path.join(cfg_dir, 'server-name.conf'), server_name)
-if domain:
-    rewrite_define(os.path.join(cfg_dir, 'domain.conf'), 'domain', domain)
-if admin_email:
-    rewrite_define(os.path.join(cfg_dir, 'admin-email.conf'), 'admin_email', admin_email)
-rewrite_custom_env(os.path.join(cfg_dir, 'custom.env'), 'WEB_URL_OVERRIDE', url_override)
-__PY__
 
-                respond '{"success":true}'
-                ;;
+def run_control(path, arg):
+    if not os.path.isfile(path):
+        return None
+    try:
+        proc = subprocess.run([path, arg], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return proc.returncode == 0
+    except Exception:
+        return False
 
-            sites)
-                SITE_NAME=$(get_param name)
-                SITE_ENABLED=$(get_param enabled)
-                SITES_AVAILABLE="${CFG_DIR}/sites-available"
-                SITES_ENABLED="${CFG_DIR}/sites-enabled"
 
-                case "$SITE_NAME" in
-                    */*|*..*)
-                        respond '{"success":false,"error_msg":"Invalid site name"}'
-                        exit 0 ;;
-                    *.conf) ;;
-                    *)
-                        respond '{"success":false,"error_msg":"Invalid site name"}'
-                        exit 0 ;;
-                esac
+def get_settings():
+    return {
+        'success':          True,
+        'server_name':      read_servername(os.path.join(CFG_DIR, 'server-name.conf')),
+        'domain':           read_define(os.path.join(CFG_DIR, 'domain.conf'), 'domain'),
+        'admin_email':      read_define(os.path.join(CFG_DIR, 'admin-email.conf'), 'admin_email'),
+        'web_url_override': read_custom_env(os.path.join(CFG_DIR, 'custom.env'), 'WEB_URL_OVERRIDE'),
+    }
 
-                if [ "$SITE_NAME" = "_default_.conf" ] && [ "$SITE_ENABLED" != "true" ]; then
-                    respond '{"success":false,"error_msg":"_default_.conf cannot be disabled"}'
-                    exit 0
-                fi
 
-                CONF_AVAILABLE="${SITES_AVAILABLE}/${SITE_NAME}"
-                CONF_ENABLED="${SITES_ENABLED}/${SITE_NAME}"
+def get_sites():
+    sites = []
+    try:
+        for name in sorted(os.listdir(SITES_AVAILABLE)):
+            if not name.endswith('.conf'):
+                continue
+            sites.append({'name': name, 'enabled': os.path.exists(os.path.join(SITES_ENABLED, name))})
+    except Exception:
+        pass
+    return {'success': True, 'sites': sites}
 
-                if [ ! -f "$CONF_AVAILABLE" ]; then
-                    respond '{"success":false,"error_msg":"Site configuration not found"}'
-                    exit 0
-                fi
 
-                mkdir -p "$SITES_ENABLED"
+def get_hosts():
+    return {'success': True, 'content': read_file(HOSTS_FILE)}
 
-                if [ "$SITE_ENABLED" = "true" ]; then
-                    rm -f "$CONF_ENABLED" 2>/dev/null
-                    ln -s "../sites-available/${SITE_NAME}" "$CONF_ENABLED"
-                else
-                    rm -f "$CONF_ENABLED" 2>/dev/null
-                fi
 
-                /usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh reload >/dev/null 2>&1
-                respond '{"success":true}'
-                ;;
+def get_apache():
+    hostname = 'nas'
+    fqdn     = '${hostname}.${domain}'
+    redirect = 'https://${server_fqdn}/'
+    proxy_to = 'https://127.0.0.1:8001/'
 
-            hosts)
-                HOSTS_CONTENT=$(get_param content)
-                HOSTS_FILE="${CFG_DIR}/deps.d/persistence/hosts"
-                mkdir -p "$(dirname "$HOSTS_FILE")"
-                printf '%s' "$HOSTS_CONTENT" > "$HOSTS_FILE"
-                if [ -s "$HOSTS_FILE" ] && [ "$(tail -c 1 "$HOSTS_FILE" | wc -l)" -eq 0 ]; then
-                    printf '\n' >> "$HOSTS_FILE"
-                fi
-                chmod 640 "$HOSTS_FILE" 2>/dev/null
+    if os.path.isfile(DEFAULT_CONF_TARGET):
+        hostname = read_define(DEFAULT_CONF_TARGET, 'hostname') or hostname
+        fqdn     = read_define(DEFAULT_CONF_TARGET, 'server_fqdn') or fqdn
+        redirect = read_define(DEFAULT_CONF_TARGET, 'redirect_to') or redirect
+        proxy_to = read_define(DEFAULT_CONF_TARGET, 'proxy_to') or proxy_to
 
-                PERSIST_SCRIPT="/usr/local/AppCentral/cappysan-persistence/CONTROL/start-stop.sh"
-                if [ ! -f "$PERSIST_SCRIPT" ]; then
-                    respond '{"success":true,"warning":"cappysan-persistence package is not installed."}'
-                elif ! "$PERSIST_SCRIPT" restart >/dev/null 2>&1; then
-                    respond '{"success":true,"warning":"Failed to restart cappysan-persistence."}'
-                else
-                    respond '{"success":true}'
-                fi
-                ;;
+    return {
+        'success':            True,
+        'apache_hostname':    hostname,
+        'apache_fqdn':        fqdn,
+        'apache_redirect_to': redirect,
+        'apache_proxy_to':    proxy_to,
+    }
 
-            apache)
-                APACHE_HOSTNAME=$(get_param apache_hostname)
-                APACHE_FQDN=$(get_param apache_fqdn)
-                APACHE_REDIRECT=$(get_param apache_redirect_to)
-                APACHE_PROXY_TO=$(get_param apache_proxy_to)
 
-                [ -z "$APACHE_HOSTNAME" ] && APACHE_HOSTNAME="nas"
-                [ -z "$APACHE_FQDN" ] && APACHE_FQDN='${hostname}.${domain}'
-                [ -z "$APACHE_REDIRECT" ] && APACHE_REDIRECT='https://${server_fqdn}/'
-                [ -z "$APACHE_PROXY_TO" ] && APACHE_PROXY_TO='https://127.0.0.1:8001/'
+def get_content(params):
+    name = param(params, 'name')
+    if '/' in name or '..' in name or not name.endswith('.conf'):
+        return {'success': False, 'content': ''}
+    return {'success': True, 'content': read_file(os.path.join(SITES_AVAILABLE, name))}
 
-                mkdir -p "$APACHE_SELF_SITES_AVAILABLE" 2>/dev/null
 
-                export _A_HOSTNAME="$APACHE_HOSTNAME" _A_FQDN="$APACHE_FQDN" \
-                       _A_REDIRECT="$APACHE_REDIRECT" _A_PROXY_TO="$APACHE_PROXY_TO" \
-                       _CONF="$APACHE_DEFAULT_CONF_TARGET"
-                "$PYTHON" - << '__PY__'
-import os
+def set_settings(params):
+    server_name  = param(params, 'server_name').strip()
+    domain       = param(params, 'domain').strip()
+    admin_email  = param(params, 'admin_email').strip()
+    url_override = param(params, 'web_url_override').strip()
 
-path = os.environ.get('_CONF', '')
-hostname = os.environ.get('_A_HOSTNAME', 'nas')
-fqdn = os.environ.get('_A_FQDN', '${hostname}.${domain}')
-redirect = os.environ.get('_A_REDIRECT', 'https://${server_fqdn}/')
-proxy_to = os.environ.get('_A_PROXY_TO', 'https://127.0.0.1:8001/')
+    if server_name:
+        rewrite_servername(os.path.join(CFG_DIR, 'server-name.conf'), server_name)
+    if domain:
+        rewrite_define(os.path.join(CFG_DIR, 'domain.conf'), 'domain', domain)
+    if admin_email:
+        rewrite_define(os.path.join(CFG_DIR, 'admin-email.conf'), 'admin_email', admin_email)
+    rewrite_custom_env(os.path.join(CFG_DIR, 'custom.env'), 'WEB_URL_OVERRIDE', url_override)
 
-try:
-    with open(path) as f:
-        lines = f.readlines()
-except Exception:
-    lines = []
+    return {'success': True}
 
-keys_found = {
-    'hostname':    False,
-    'server_fqdn': False,
-    'redirect_to': False,
-    'proxy_to':    False,
-}
 
-out = []
-for line in lines:
-    if line.startswith('Define hostname '):
-        out.append('Define hostname    %s\n' % hostname)
-        keys_found['hostname'] = True
-    elif line.startswith('Define server_fqdn '):
-        out.append('Define server_fqdn %s\n' % fqdn)
-        keys_found['server_fqdn'] = True
-    elif line.startswith('Define redirect_to '):
-        out.append('Define redirect_to %s\n' % redirect)
-        keys_found['redirect_to'] = True
-    elif line.startswith('Define proxy_to '):
-        out.append('Define proxy_to    %s\n' % proxy_to)
-        keys_found['proxy_to'] = True
+def set_sites(params):
+    name    = param(params, 'name')
+    enabled = param(params, 'enabled')
+
+    if '/' in name or '..' in name or not name.endswith('.conf'):
+        return {'success': False, 'error_msg': 'Invalid site name'}
+
+    if name == '_default_.conf' and enabled != 'true':
+        return {'success': False, 'error_msg': '_default_.conf cannot be disabled'}
+
+    conf_available = os.path.join(SITES_AVAILABLE, name)
+    conf_enabled   = os.path.join(SITES_ENABLED, name)
+
+    if not os.path.isfile(conf_available):
+        return {'success': False, 'error_msg': 'Site configuration not found'}
+
+    os.makedirs(SITES_ENABLED, exist_ok=True)
+
+    try:
+        os.remove(conf_enabled)
+    except Exception:
+        pass
+
+    if enabled == 'true':
+        os.symlink(os.path.join('..', 'sites-available', name), conf_enabled)
+
+    run_control(APACHE_CONTROL, 'reload')
+    return {'success': True}
+
+
+def set_hosts(params):
+    content = param(params, 'content')
+    os.makedirs(os.path.dirname(HOSTS_FILE), exist_ok=True)
+    with open(HOSTS_FILE, 'w') as f:
+        f.write(content)
+        if content and not content.endswith('\n'):
+            f.write('\n')
+    try:
+        os.chmod(HOSTS_FILE, 0o640)
+    except Exception:
+        pass
+
+    if not os.path.isfile(PERSISTENCE_CONTROL):
+        return {'success': True, 'warning': 'cappysan-persistence package is not installed.'}
+    if not run_control(PERSISTENCE_CONTROL, 'restart'):
+        return {'success': True, 'warning': 'Failed to restart cappysan-persistence.'}
+    return {'success': True}
+
+
+def set_apache(params):
+    hostname = param(params, 'apache_hostname') or 'nas'
+    fqdn     = param(params, 'apache_fqdn') or '${hostname}.${domain}'
+    redirect = param(params, 'apache_redirect_to') or 'https://${server_fqdn}/'
+    proxy_to = param(params, 'apache_proxy_to') or 'https://127.0.0.1:8001/'
+
+    os.makedirs(SITES_AVAILABLE, exist_ok=True)
+
+    try:
+        with open(DEFAULT_CONF_TARGET) as f:
+            lines = f.readlines()
+    except Exception:
+        lines = []
+
+    keys_found = {'hostname': False, 'server_fqdn': False, 'redirect_to': False, 'proxy_to': False}
+
+    out = []
+    for line in lines:
+        if line.startswith('Define hostname '):
+            out.append('Define hostname    %s\n' % hostname)
+            keys_found['hostname'] = True
+        elif line.startswith('Define server_fqdn '):
+            out.append('Define server_fqdn %s\n' % fqdn)
+            keys_found['server_fqdn'] = True
+        elif line.startswith('Define redirect_to '):
+            out.append('Define redirect_to %s\n' % redirect)
+            keys_found['redirect_to'] = True
+        elif line.startswith('Define proxy_to '):
+            out.append('Define proxy_to    %s\n' % proxy_to)
+            keys_found['proxy_to'] = True
+        else:
+            out.append(line)
+
+    # If the file was missing, empty, or simply never had these Define lines
+    # (e.g. fresh install before conf.dist seeding ran), write them fresh so
+    # the save is never silently a no-op.
+    prelude = []
+    if not keys_found['hostname']:
+        prelude.append('Define hostname    %s\n' % hostname)
+    if not keys_found['server_fqdn']:
+        prelude.append('Define server_fqdn %s\n' % fqdn)
+    if not keys_found['redirect_to']:
+        prelude.append('Define redirect_to %s\n' % redirect)
+    if not keys_found['proxy_to']:
+        prelude.append('Define proxy_to    %s\n' % proxy_to)
+
+    if prelude:
+        out = prelude + (['\n'] if out else []) + out
+
+    with open(DEFAULT_CONF_TARGET, 'w') as f:
+        f.writelines(out)
+
+    return {'success': True}
+
+
+def check_persistence():
+    return {'success': True, 'installed': os.path.isfile(PERSISTENCE_CONFIG)}
+
+
+def reload_apache():
+    if not os.path.isfile(APACHE_CONTROL):
+        return {'success': True, 'warning': 'cappysan-apache package is not installed.'}
+    if not run_control(APACHE_CONTROL, 'reload'):
+        return {'success': True, 'warning': 'Failed to reload cappysan-apache.'}
+    return {'success': True}
+
+
+def restart_apache():
+    if not os.path.isfile(APACHE_CONTROL):
+        return {'success': True, 'warning': 'cappysan-apache package is not installed.'}
+    if not run_control(APACHE_CONTROL, 'restart'):
+        return {'success': True, 'warning': 'Failed to restart cappysan-apache.'}
+    return {'success': True}
+
+
+PARAMS = get_params()
+ACT    = param(PARAMS, 'act')
+TAB    = param(PARAMS, 'tab')
+
+if ACT == 'get':
+    if TAB == 'settings':
+        respond(get_settings())
+    elif TAB == 'sites':
+        respond(get_sites())
+    elif TAB == 'hosts':
+        respond(get_hosts())
+    elif TAB == 'apache':
+        respond(get_apache())
     else:
-        out.append(line)
+        respond({'success': True})
 
-# If the file was missing, empty, or simply never had these Define lines
-# (e.g. fresh install before conf.dist seeding ran), write them fresh so
-# the save is never silently a no-op.
-prelude = []
-if not keys_found['hostname']:
-    prelude.append('Define hostname    %s\n' % hostname)
-if not keys_found['server_fqdn']:
-    prelude.append('Define server_fqdn %s\n' % fqdn)
-if not keys_found['redirect_to']:
-    prelude.append('Define redirect_to %s\n' % redirect)
-if not keys_found['proxy_to']:
-    prelude.append('Define proxy_to    %s\n' % proxy_to)
+elif ACT == 'get_content':
+    respond(get_content(PARAMS))
 
-if prelude:
-    out = prelude + (['\n'] if out else []) + out
+elif ACT == 'set':
+    if TAB == 'settings':
+        respond(set_settings(PARAMS))
+    elif TAB == 'sites':
+        respond(set_sites(PARAMS))
+    elif TAB == 'hosts':
+        respond(set_hosts(PARAMS))
+    elif TAB == 'apache':
+        respond(set_apache(PARAMS))
+    else:
+        respond({'success': True})
 
-with open(path, 'w') as f:
-    f.writelines(out)
-__PY__
+elif ACT == 'check_persistence':
+    respond(check_persistence())
 
-                respond '{"success":true}'
-                ;;
+elif ACT == 'reload':
+    respond(reload_apache())
 
-            *)
-                respond '{"success":true}'
-                ;;
-        esac
-        ;;
+elif ACT == 'restart':
+    respond(restart_apache())
 
-    check_persistence)
-        if [ -f "/usr/local/AppCentral/cappysan-persistence/CONTROL/config.json" ]; then
-            respond '{"success":true,"installed":true}'
-        else
-            respond '{"success":true,"installed":false}'
-        fi
-        ;;
-
-    reload)
-        APACHE_SCRIPT="/usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh"
-        if [ ! -f "$APACHE_SCRIPT" ]; then
-            respond '{"success":true,"warning":"cappysan-apache package is not installed."}'
-        elif ! "$APACHE_SCRIPT" reload >/dev/null 2>&1; then
-            respond '{"success":true,"warning":"Failed to reload cappysan-apache."}'
-        else
-            respond '{"success":true}'
-        fi
-        ;;
-
-    restart)
-        APACHE_SCRIPT="/usr/local/AppCentral/cappysan-apache/CONTROL/start-stop.sh"
-        if [ ! -f "$APACHE_SCRIPT" ]; then
-            respond '{"success":true,"warning":"cappysan-apache package is not installed."}'
-        elif ! "$APACHE_SCRIPT" restart >/dev/null 2>&1; then
-            respond '{"success":true,"warning":"Failed to restart cappysan-apache."}'
-        else
-            respond '{"success":true}'
-        fi
-        ;;
-
-    *)
-        respond '{"success":false,"error_code":400,"error_msg":"Unknown action"}'
-        ;;
-esac
-exit 0
+else:
+    respond({'success': False, 'error_code': 400, 'error_msg': 'Unknown action'})
